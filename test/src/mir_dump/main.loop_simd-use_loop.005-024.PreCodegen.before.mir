@@ -1,0 +1,404 @@
+// MIR for `use_loop` before PreCodegen
+
+fn use_loop() -> () {
+    let mut _0: ();                      // return place in scope 0 at loop_simd.rs:11:19: 11:19
+    let _1: std::time::SystemTime;       // in scope 0 at loop_simd.rs:12:9: 12:11
+    let mut _4: &std::time::Duration;    // in scope 0 at loop_simd.rs:14:14: 17:21
+    let _5: std::time::Duration;         // in scope 0 at loop_simd.rs:14:14: 16:18
+    let mut _6: std::result::Result<std::time::Duration, std::time::SystemTimeError>; // in scope 0 at loop_simd.rs:14:14: 15:28
+    let mut _7: &std::time::SystemTime;  // in scope 0 at loop_simd.rs:14:14: 15:28
+    let _8: std::time::SystemTime;       // in scope 0 at loop_simd.rs:14:14: 14:37
+    let mut _9: std::time::SystemTime;   // in scope 0 at loop_simd.rs:15:25: 15:27
+    let mut _13: &std::time::Duration;   // in scope 0 at loop_simd.rs:21:14: 24:21
+    let _14: std::time::Duration;        // in scope 0 at loop_simd.rs:21:14: 23:18
+    let mut _15: std::result::Result<std::time::Duration, std::time::SystemTimeError>; // in scope 0 at loop_simd.rs:21:14: 22:28
+    let mut _16: &std::time::SystemTime; // in scope 0 at loop_simd.rs:21:14: 22:28
+    let _17: std::time::SystemTime;      // in scope 0 at loop_simd.rs:21:14: 21:37
+    let mut _18: std::time::SystemTime;  // in scope 0 at loop_simd.rs:22:25: 22:27
+    let _19: ();                         // in scope 0 at /rustc/efec545293b9263be9edfb283a7aa66350b3acbf\library\std\src\macros.rs:97:9: 97:62
+    let mut _20: std::fmt::Arguments;    // in scope 0 at /rustc/efec545293b9263be9edfb283a7aa66350b3acbf\library\std\src\macros.rs:97:28: 97:61
+    let mut _21: &[&str];                // in scope 0 at loop_simd.rs:26:14: 26:21
+    let mut _22: &[&str; 2];             // in scope 0 at loop_simd.rs:26:14: 26:21
+    let _23: &[&str; 2];                 // in scope 0 at loop_simd.rs:26:14: 26:21
+    let mut _24: &[std::fmt::ArgumentV1]; // in scope 0 at /rustc/efec545293b9263be9edfb283a7aa66350b3acbf\library\std\src\macros.rs:97:28: 97:61
+    let mut _25: &[std::fmt::ArgumentV1; 1]; // in scope 0 at /rustc/efec545293b9263be9edfb283a7aa66350b3acbf\library\std\src\macros.rs:97:28: 97:61
+    let _26: &[std::fmt::ArgumentV1; 1]; // in scope 0 at /rustc/efec545293b9263be9edfb283a7aa66350b3acbf\library\std\src\macros.rs:97:28: 97:61
+    let _27: [std::fmt::ArgumentV1; 1];  // in scope 0 at /rustc/efec545293b9263be9edfb283a7aa66350b3acbf\library\std\src\macros.rs:97:28: 97:61
+    let mut _28: (&u128,);               // in scope 0 at /rustc/efec545293b9263be9edfb283a7aa66350b3acbf\library\std\src\macros.rs:97:28: 97:61
+    let mut _29: &u128;                  // in scope 0 at loop_simd.rs:26:23: 26:25
+    let mut _31: std::fmt::ArgumentV1;   // in scope 0 at /rustc/efec545293b9263be9edfb283a7aa66350b3acbf\library\std\src\macros.rs:97:28: 97:61
+    let mut _32: &u128;                  // in scope 0 at loop_simd.rs:26:23: 26:25
+    let mut _33: for<'r, 's, 't0> fn(&'r u128, &'s mut std::fmt::Formatter<'t0>) -> std::result::Result<(), std::fmt::Error>; // in scope 0 at loop_simd.rs:26:23: 26:25
+    let _34: ();                         // in scope 0 at /rustc/efec545293b9263be9edfb283a7aa66350b3acbf\library\std\src\macros.rs:97:9: 97:62
+    let mut _35: std::fmt::Arguments;    // in scope 0 at /rustc/efec545293b9263be9edfb283a7aa66350b3acbf\library\std\src\macros.rs:97:28: 97:61
+    let mut _36: &[&str];                // in scope 0 at loop_simd.rs:27:14: 27:21
+    let mut _37: &[&str; 2];             // in scope 0 at loop_simd.rs:27:14: 27:21
+    let _38: &[&str; 2];                 // in scope 0 at loop_simd.rs:27:14: 27:21
+    let mut _39: &[std::fmt::ArgumentV1]; // in scope 0 at /rustc/efec545293b9263be9edfb283a7aa66350b3acbf\library\std\src\macros.rs:97:28: 97:61
+    let mut _40: &[std::fmt::ArgumentV1; 1]; // in scope 0 at /rustc/efec545293b9263be9edfb283a7aa66350b3acbf\library\std\src\macros.rs:97:28: 97:61
+    let _41: &[std::fmt::ArgumentV1; 1]; // in scope 0 at /rustc/efec545293b9263be9edfb283a7aa66350b3acbf\library\std\src\macros.rs:97:28: 97:61
+    let _42: [std::fmt::ArgumentV1; 1];  // in scope 0 at /rustc/efec545293b9263be9edfb283a7aa66350b3acbf\library\std\src\macros.rs:97:28: 97:61
+    let mut _43: (&u128,);               // in scope 0 at /rustc/efec545293b9263be9edfb283a7aa66350b3acbf\library\std\src\macros.rs:97:28: 97:61
+    let mut _44: &u128;                  // in scope 0 at loop_simd.rs:27:23: 27:25
+    let mut _46: std::fmt::ArgumentV1;   // in scope 0 at /rustc/efec545293b9263be9edfb283a7aa66350b3acbf\library\std\src\macros.rs:97:28: 97:61
+    let mut _47: &u128;                  // in scope 0 at loop_simd.rs:27:23: 27:25
+    let mut _48: for<'r, 's, 't0> fn(&'r u128, &'s mut std::fmt::Formatter<'t0>) -> std::result::Result<(), std::fmt::Error>; // in scope 0 at loop_simd.rs:27:23: 27:25
+    let mut _49: bool;                   // in scope 0 at loop_simd.rs:28:5: 28:36
+    let mut _50: bool;                   // in scope 0 at loop_simd.rs:28:13: 28:35
+    let mut _51: f32;                    // in scope 0 at loop_simd.rs:28:13: 28:27
+    let mut _52: f32;                    // in scope 0 at loop_simd.rs:28:13: 28:22
+    let mut _53: f32;                    // in scope 0 at loop_simd.rs:28:14: 28:16
+    let mut _54: f32;                    // in scope 0 at loop_simd.rs:28:19: 28:21
+    let mut _55: f32;                    // in scope 0 at loop_simd.rs:28:25: 28:27
+    scope 1 {
+        debug t1 => _1;                  // in scope 1 at loop_simd.rs:12:9: 12:11
+        let _2: f32;                     // in scope 1 at loop_simd.rs:13:9: 13:11
+        scope 2 {
+            debug f1 => _2;              // in scope 2 at loop_simd.rs:13:9: 13:11
+            let _3: u128;                // in scope 2 at loop_simd.rs:14:9: 14:11
+            scope 3 {
+                debug t1 => _3;          // in scope 3 at loop_simd.rs:14:9: 14:11
+                let _10: std::time::SystemTime; // in scope 3 at loop_simd.rs:19:9: 19:11
+                scope 4 {
+                    debug t2 => _10;     // in scope 4 at loop_simd.rs:19:9: 19:11
+                    let _11: f32;        // in scope 4 at loop_simd.rs:20:9: 20:11
+                    scope 5 {
+                        debug f2 => _11; // in scope 5 at loop_simd.rs:20:9: 20:11
+                        let _12: u128;   // in scope 5 at loop_simd.rs:21:9: 21:11
+                        scope 6 {
+                            debug t2 => _12; // in scope 6 at loop_simd.rs:21:9: 21:11
+                            let _30: (&u128,); // in scope 6 at /rustc/efec545293b9263be9edfb283a7aa66350b3acbf\library\std\src\macros.rs:97:28: 97:61
+                            let _45: (&u128,); // in scope 6 at /rustc/efec545293b9263be9edfb283a7aa66350b3acbf\library\std\src\macros.rs:97:28: 97:61
+                            let mut _56: &[&str; 2]; // in scope 6 at loop_simd.rs:27:14: 27:21
+                            let mut _57: &[&str; 2]; // in scope 6 at loop_simd.rs:26:14: 26:21
+                            scope 7 {
+                                debug _args => _30; // in scope 7 at /rustc/efec545293b9263be9edfb283a7aa66350b3acbf\library\std\src\macros.rs:97:28: 97:61
+                            }
+                            scope 8 {
+                                debug _args => _45; // in scope 8 at /rustc/efec545293b9263be9edfb283a7aa66350b3acbf\library\std\src\macros.rs:97:28: 97:61
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    bb0: {
+        StorageLive(_1);                 // scope 0 at loop_simd.rs:12:9: 12:11
+        _1 = SystemTime::now() -> bb1;   // scope 0 at loop_simd.rs:12:14: 12:37
+                                         // mir::Constant
+                                         // + span: loop_simd.rs:12:14: 12:35
+                                         // + literal: Const { ty: fn() -> std::time::SystemTime {std::time::SystemTime::now}, val: Value(Scalar(<ZST>)) }
+    }
+
+    bb1: {
+        StorageLive(_2);                 // scope 1 at loop_simd.rs:13:9: 13:11
+        _2 = loop_simd::func1(const 1280005_usize) -> bb2; // scope 1 at loop_simd.rs:13:14: 13:28
+                                         // mir::Constant
+                                         // + span: loop_simd.rs:13:14: 13:19
+                                         // + literal: Const { ty: fn(usize) -> f32 {loop_simd::func1}, val: Value(Scalar(<ZST>)) }
+    }
+
+    bb2: {
+        StorageLive(_3);                 // scope 2 at loop_simd.rs:14:9: 14:11
+        StorageLive(_4);                 // scope 2 at loop_simd.rs:14:14: 17:21
+        StorageLive(_5);                 // scope 2 at loop_simd.rs:14:14: 16:18
+        StorageLive(_6);                 // scope 2 at loop_simd.rs:14:14: 15:28
+        StorageLive(_7);                 // scope 2 at loop_simd.rs:14:14: 15:28
+        StorageLive(_8);                 // scope 2 at loop_simd.rs:14:14: 14:37
+        _8 = SystemTime::now() -> bb3;   // scope 2 at loop_simd.rs:14:14: 14:37
+                                         // mir::Constant
+                                         // + span: loop_simd.rs:14:14: 14:35
+                                         // + literal: Const { ty: fn() -> std::time::SystemTime {std::time::SystemTime::now}, val: Value(Scalar(<ZST>)) }
+    }
+
+    bb3: {
+        _7 = &_8;                        // scope 2 at loop_simd.rs:14:14: 15:28
+        StorageLive(_9);                 // scope 2 at loop_simd.rs:15:25: 15:27
+        _9 = _1;                         // scope 2 at loop_simd.rs:15:25: 15:27
+        _6 = SystemTime::duration_since(move _7, move _9) -> bb4; // scope 2 at loop_simd.rs:14:14: 15:28
+                                         // mir::Constant
+                                         // + span: loop_simd.rs:15:10: 15:24
+                                         // + literal: Const { ty: for<'r> fn(&'r std::time::SystemTime, std::time::SystemTime) -> std::result::Result<std::time::Duration, std::time::SystemTimeError> {std::time::SystemTime::duration_since}, val: Value(Scalar(<ZST>)) }
+    }
+
+    bb4: {
+        StorageDead(_9);                 // scope 2 at loop_simd.rs:15:27: 15:28
+        StorageDead(_7);                 // scope 2 at loop_simd.rs:15:27: 15:28
+        _5 = Result::<Duration, SystemTimeError>::unwrap(move _6) -> bb5; // scope 2 at loop_simd.rs:14:14: 16:18
+                                         // mir::Constant
+                                         // + span: loop_simd.rs:16:10: 16:16
+                                         // + literal: Const { ty: fn(std::result::Result<std::time::Duration, std::time::SystemTimeError>) -> std::time::Duration {std::result::Result::<std::time::Duration, std::time::SystemTimeError>::unwrap}, val: Value(Scalar(<ZST>)) }
+    }
+
+    bb5: {
+        _4 = &_5;                        // scope 2 at loop_simd.rs:14:14: 17:21
+        StorageDead(_6);                 // scope 2 at loop_simd.rs:16:17: 16:18
+        _3 = Duration::as_micros(move _4) -> bb6; // scope 2 at loop_simd.rs:14:14: 17:21
+                                         // mir::Constant
+                                         // + span: loop_simd.rs:17:10: 17:19
+                                         // + literal: Const { ty: for<'r> fn(&'r std::time::Duration) -> u128 {std::time::Duration::as_micros}, val: Value(Scalar(<ZST>)) }
+    }
+
+    bb6: {
+        StorageDead(_4);                 // scope 2 at loop_simd.rs:17:20: 17:21
+        StorageDead(_8);                 // scope 2 at loop_simd.rs:17:21: 17:22
+        StorageDead(_5);                 // scope 2 at loop_simd.rs:17:21: 17:22
+        StorageLive(_10);                // scope 3 at loop_simd.rs:19:9: 19:11
+        _10 = SystemTime::now() -> bb7;  // scope 3 at loop_simd.rs:19:14: 19:37
+                                         // mir::Constant
+                                         // + span: loop_simd.rs:19:14: 19:35
+                                         // + literal: Const { ty: fn() -> std::time::SystemTime {std::time::SystemTime::now}, val: Value(Scalar(<ZST>)) }
+    }
+
+    bb7: {
+        StorageLive(_11);                // scope 4 at loop_simd.rs:20:9: 20:11
+        _11 = func2(const 1280005_usize) -> bb8; // scope 4 at loop_simd.rs:20:14: 20:28
+                                         // mir::Constant
+                                         // + span: loop_simd.rs:20:14: 20:19
+                                         // + literal: Const { ty: fn(usize) -> f32 {loop_simd::func2}, val: Value(Scalar(<ZST>)) }
+    }
+
+    bb8: {
+        StorageLive(_12);                // scope 5 at loop_simd.rs:21:9: 21:11
+        StorageLive(_13);                // scope 5 at loop_simd.rs:21:14: 24:21
+        StorageLive(_14);                // scope 5 at loop_simd.rs:21:14: 23:18
+        StorageLive(_15);                // scope 5 at loop_simd.rs:21:14: 22:28
+        StorageLive(_16);                // scope 5 at loop_simd.rs:21:14: 22:28
+        StorageLive(_17);                // scope 5 at loop_simd.rs:21:14: 21:37
+        _17 = SystemTime::now() -> bb9;  // scope 5 at loop_simd.rs:21:14: 21:37
+                                         // mir::Constant
+                                         // + span: loop_simd.rs:21:14: 21:35
+                                         // + literal: Const { ty: fn() -> std::time::SystemTime {std::time::SystemTime::now}, val: Value(Scalar(<ZST>)) }
+    }
+
+    bb9: {
+        _16 = &_17;                      // scope 5 at loop_simd.rs:21:14: 22:28
+        StorageLive(_18);                // scope 5 at loop_simd.rs:22:25: 22:27
+        _18 = _10;                       // scope 5 at loop_simd.rs:22:25: 22:27
+        _15 = SystemTime::duration_since(move _16, move _18) -> bb10; // scope 5 at loop_simd.rs:21:14: 22:28
+                                         // mir::Constant
+                                         // + span: loop_simd.rs:22:10: 22:24
+                                         // + literal: Const { ty: for<'r> fn(&'r std::time::SystemTime, std::time::SystemTime) -> std::result::Result<std::time::Duration, std::time::SystemTimeError> {std::time::SystemTime::duration_since}, val: Value(Scalar(<ZST>)) }
+    }
+
+    bb10: {
+        StorageDead(_18);                // scope 5 at loop_simd.rs:22:27: 22:28
+        StorageDead(_16);                // scope 5 at loop_simd.rs:22:27: 22:28
+        _14 = Result::<Duration, SystemTimeError>::unwrap(move _15) -> bb11; // scope 5 at loop_simd.rs:21:14: 23:18
+                                         // mir::Constant
+                                         // + span: loop_simd.rs:23:10: 23:16
+                                         // + literal: Const { ty: fn(std::result::Result<std::time::Duration, std::time::SystemTimeError>) -> std::time::Duration {std::result::Result::<std::time::Duration, std::time::SystemTimeError>::unwrap}, val: Value(Scalar(<ZST>)) }
+    }
+
+    bb11: {
+        _13 = &_14;                      // scope 5 at loop_simd.rs:21:14: 24:21
+        StorageDead(_15);                // scope 5 at loop_simd.rs:23:17: 23:18
+        _12 = Duration::as_micros(move _13) -> bb12; // scope 5 at loop_simd.rs:21:14: 24:21
+                                         // mir::Constant
+                                         // + span: loop_simd.rs:24:10: 24:19
+                                         // + literal: Const { ty: for<'r> fn(&'r std::time::Duration) -> u128 {std::time::Duration::as_micros}, val: Value(Scalar(<ZST>)) }
+    }
+
+    bb12: {
+        StorageDead(_13);                // scope 5 at loop_simd.rs:24:20: 24:21
+        StorageDead(_17);                // scope 5 at loop_simd.rs:24:21: 24:22
+        StorageDead(_14);                // scope 5 at loop_simd.rs:24:21: 24:22
+        StorageLive(_19);                // scope 6 at /rustc/efec545293b9263be9edfb283a7aa66350b3acbf\library\std\src\macros.rs:97:9: 97:62
+        StorageLive(_20);                // scope 6 at /rustc/efec545293b9263be9edfb283a7aa66350b3acbf\library\std\src\macros.rs:97:28: 97:61
+        StorageLive(_21);                // scope 6 at loop_simd.rs:26:14: 26:21
+        StorageLive(_22);                // scope 6 at loop_simd.rs:26:14: 26:21
+        StorageLive(_23);                // scope 6 at loop_simd.rs:26:14: 26:21
+        _57 = const use_loop::promoted[1]; // scope 6 at loop_simd.rs:26:14: 26:21
+                                         // ty::Const
+                                         // + ty: &[&str; 2]
+                                         // + val: Unevaluated(use_loop, [], Some(promoted[1]))
+                                         // mir::Constant
+                                         // + span: loop_simd.rs:26:14: 26:21
+                                         // + literal: Const { ty: &[&str; 2], val: Unevaluated(Unevaluated { def: WithOptConstParam { did: DefId(0:21 ~ main[8185]::loop_simd::use_loop), const_param_did: None }, substs_: Some([]), promoted: Some(promoted[1]) }) }
+        _23 = _57;                       // scope 6 at loop_simd.rs:26:14: 26:21
+        _22 = _23;                       // scope 6 at loop_simd.rs:26:14: 26:21
+        _21 = move _22 as &[&str] (Pointer(Unsize)); // scope 6 at loop_simd.rs:26:14: 26:21
+        StorageDead(_22);                // scope 6 at loop_simd.rs:26:20: 26:21
+        StorageLive(_24);                // scope 6 at /rustc/efec545293b9263be9edfb283a7aa66350b3acbf\library\std\src\macros.rs:97:28: 97:61
+        StorageLive(_25);                // scope 6 at /rustc/efec545293b9263be9edfb283a7aa66350b3acbf\library\std\src\macros.rs:97:28: 97:61
+        StorageLive(_26);                // scope 6 at /rustc/efec545293b9263be9edfb283a7aa66350b3acbf\library\std\src\macros.rs:97:28: 97:61
+        StorageLive(_27);                // scope 6 at /rustc/efec545293b9263be9edfb283a7aa66350b3acbf\library\std\src\macros.rs:97:28: 97:61
+        StorageLive(_28);                // scope 6 at /rustc/efec545293b9263be9edfb283a7aa66350b3acbf\library\std\src\macros.rs:97:28: 97:61
+        StorageLive(_29);                // scope 6 at loop_simd.rs:26:23: 26:25
+        _29 = &_3;                       // scope 6 at loop_simd.rs:26:23: 26:25
+        (_28.0: &u128) = move _29;       // scope 6 at /rustc/efec545293b9263be9edfb283a7aa66350b3acbf\library\std\src\macros.rs:97:28: 97:61
+        StorageDead(_29);                // scope 6 at /rustc/efec545293b9263be9edfb283a7aa66350b3acbf\library\std\src\macros.rs:97:60: 97:61
+        StorageLive(_30);                // scope 6 at /rustc/efec545293b9263be9edfb283a7aa66350b3acbf\library\std\src\macros.rs:97:28: 97:61
+        _30 = _28;                       // scope 6 at /rustc/efec545293b9263be9edfb283a7aa66350b3acbf\library\std\src\macros.rs:97:28: 97:61
+        StorageLive(_31);                // scope 7 at /rustc/efec545293b9263be9edfb283a7aa66350b3acbf\library\std\src\macros.rs:97:28: 97:61
+        StorageLive(_32);                // scope 7 at loop_simd.rs:26:23: 26:25
+        _32 = (_30.0: &u128);            // scope 7 at loop_simd.rs:26:23: 26:25
+        StorageLive(_33);                // scope 7 at loop_simd.rs:26:23: 26:25
+        _33 = <u128 as std::fmt::Display>::fmt as for<'r, 's, 't0> fn(&'r u128, &'s mut std::fmt::Formatter<'t0>) -> std::result::Result<(), std::fmt::Error> (Pointer(ReifyFnPointer)); // scope 7 at loop_simd.rs:26:23: 26:25
+                                         // mir::Constant
+                                         // + span: loop_simd.rs:26:23: 26:25
+                                         // + literal: Const { ty: for<'r, 's, 't0> fn(&'r u128, &'s mut std::fmt::Formatter<'t0>) -> std::result::Result<(), std::fmt::Error> {<u128 as std::fmt::Display>::fmt}, val: Value(Scalar(<ZST>)) }
+        _31 = ArgumentV1::new::<u128>(move _32, move _33) -> bb13; // scope 7 at /rustc/efec545293b9263be9edfb283a7aa66350b3acbf\library\std\src\macros.rs:97:28: 97:61
+                                         // mir::Constant
+                                         // + span: /rustc/efec545293b9263be9edfb283a7aa66350b3acbf\library\std\src\macros.rs:97:28: 97:61
+                                         // + user_ty: UserType(1)
+                                         // + literal: Const { ty: for<'b> fn(&'b u128, for<'r, 's, 't0> fn(&'r u128, &'s mut std::fmt::Formatter<'t0>) -> std::result::Result<(), std::fmt::Error>) -> std::fmt::ArgumentV1<'b> {std::fmt::ArgumentV1::new::<u128>}, val: Value(Scalar(<ZST>)) }
+    }
+
+    bb13: {
+        StorageDead(_33);                // scope 7 at /rustc/efec545293b9263be9edfb283a7aa66350b3acbf\library\std\src\macros.rs:97:60: 97:61
+        StorageDead(_32);                // scope 7 at /rustc/efec545293b9263be9edfb283a7aa66350b3acbf\library\std\src\macros.rs:97:60: 97:61
+        _27 = [move _31];                // scope 7 at /rustc/efec545293b9263be9edfb283a7aa66350b3acbf\library\std\src\macros.rs:97:28: 97:61
+        StorageDead(_31);                // scope 7 at /rustc/efec545293b9263be9edfb283a7aa66350b3acbf\library\std\src\macros.rs:97:60: 97:61
+        StorageDead(_30);                // scope 6 at /rustc/efec545293b9263be9edfb283a7aa66350b3acbf\library\std\src\macros.rs:97:60: 97:61
+        _26 = &_27;                      // scope 6 at /rustc/efec545293b9263be9edfb283a7aa66350b3acbf\library\std\src\macros.rs:97:28: 97:61
+        _25 = _26;                       // scope 6 at /rustc/efec545293b9263be9edfb283a7aa66350b3acbf\library\std\src\macros.rs:97:28: 97:61
+        _24 = move _25 as &[std::fmt::ArgumentV1] (Pointer(Unsize)); // scope 6 at /rustc/efec545293b9263be9edfb283a7aa66350b3acbf\library\std\src\macros.rs:97:28: 97:61
+        StorageDead(_25);                // scope 6 at /rustc/efec545293b9263be9edfb283a7aa66350b3acbf\library\std\src\macros.rs:97:60: 97:61
+        _20 = Arguments::new_v1(move _21, move _24) -> bb14; // scope 6 at /rustc/efec545293b9263be9edfb283a7aa66350b3acbf\library\std\src\macros.rs:97:28: 97:61
+                                         // mir::Constant
+                                         // + span: /rustc/efec545293b9263be9edfb283a7aa66350b3acbf\library\std\src\macros.rs:97:28: 97:61
+                                         // + user_ty: UserType(0)
+                                         // + literal: Const { ty: fn(&[&'static str], &[std::fmt::ArgumentV1]) -> std::fmt::Arguments {std::fmt::Arguments::new_v1}, val: Value(Scalar(<ZST>)) }
+    }
+
+    bb14: {
+        StorageDead(_24);                // scope 6 at /rustc/efec545293b9263be9edfb283a7aa66350b3acbf\library\std\src\macros.rs:97:60: 97:61
+        StorageDead(_21);                // scope 6 at /rustc/efec545293b9263be9edfb283a7aa66350b3acbf\library\std\src\macros.rs:97:60: 97:61
+        _19 = _print(move _20) -> bb15;  // scope 6 at /rustc/efec545293b9263be9edfb283a7aa66350b3acbf\library\std\src\macros.rs:97:9: 97:62
+                                         // mir::Constant
+                                         // + span: /rustc/efec545293b9263be9edfb283a7aa66350b3acbf\library\std\src\macros.rs:97:9: 97:27
+                                         // + literal: Const { ty: for<'r> fn(std::fmt::Arguments<'r>) {std::io::_print}, val: Value(Scalar(<ZST>)) }
+    }
+
+    bb15: {
+        StorageDead(_20);                // scope 6 at /rustc/efec545293b9263be9edfb283a7aa66350b3acbf\library\std\src\macros.rs:97:61: 97:62
+        StorageDead(_28);                // scope 6 at /rustc/efec545293b9263be9edfb283a7aa66350b3acbf\library\std\src\macros.rs:97:62: 97:63
+        StorageDead(_27);                // scope 6 at /rustc/efec545293b9263be9edfb283a7aa66350b3acbf\library\std\src\macros.rs:97:62: 97:63
+        StorageDead(_26);                // scope 6 at /rustc/efec545293b9263be9edfb283a7aa66350b3acbf\library\std\src\macros.rs:97:62: 97:63
+        StorageDead(_23);                // scope 6 at /rustc/efec545293b9263be9edfb283a7aa66350b3acbf\library\std\src\macros.rs:97:62: 97:63
+        StorageDead(_19);                // scope 6 at /rustc/efec545293b9263be9edfb283a7aa66350b3acbf\library\std\src\macros.rs:97:62: 97:63
+        StorageLive(_34);                // scope 6 at /rustc/efec545293b9263be9edfb283a7aa66350b3acbf\library\std\src\macros.rs:97:9: 97:62
+        StorageLive(_35);                // scope 6 at /rustc/efec545293b9263be9edfb283a7aa66350b3acbf\library\std\src\macros.rs:97:28: 97:61
+        StorageLive(_36);                // scope 6 at loop_simd.rs:27:14: 27:21
+        StorageLive(_37);                // scope 6 at loop_simd.rs:27:14: 27:21
+        StorageLive(_38);                // scope 6 at loop_simd.rs:27:14: 27:21
+        _56 = const use_loop::promoted[0]; // scope 6 at loop_simd.rs:27:14: 27:21
+                                         // ty::Const
+                                         // + ty: &[&str; 2]
+                                         // + val: Unevaluated(use_loop, [], Some(promoted[0]))
+                                         // mir::Constant
+                                         // + span: loop_simd.rs:27:14: 27:21
+                                         // + literal: Const { ty: &[&str; 2], val: Unevaluated(Unevaluated { def: WithOptConstParam { did: DefId(0:21 ~ main[8185]::loop_simd::use_loop), const_param_did: None }, substs_: Some([]), promoted: Some(promoted[0]) }) }
+        _38 = _56;                       // scope 6 at loop_simd.rs:27:14: 27:21
+        _37 = _38;                       // scope 6 at loop_simd.rs:27:14: 27:21
+        _36 = move _37 as &[&str] (Pointer(Unsize)); // scope 6 at loop_simd.rs:27:14: 27:21
+        StorageDead(_37);                // scope 6 at loop_simd.rs:27:20: 27:21
+        StorageLive(_39);                // scope 6 at /rustc/efec545293b9263be9edfb283a7aa66350b3acbf\library\std\src\macros.rs:97:28: 97:61
+        StorageLive(_40);                // scope 6 at /rustc/efec545293b9263be9edfb283a7aa66350b3acbf\library\std\src\macros.rs:97:28: 97:61
+        StorageLive(_41);                // scope 6 at /rustc/efec545293b9263be9edfb283a7aa66350b3acbf\library\std\src\macros.rs:97:28: 97:61
+        StorageLive(_42);                // scope 6 at /rustc/efec545293b9263be9edfb283a7aa66350b3acbf\library\std\src\macros.rs:97:28: 97:61
+        StorageLive(_43);                // scope 6 at /rustc/efec545293b9263be9edfb283a7aa66350b3acbf\library\std\src\macros.rs:97:28: 97:61
+        StorageLive(_44);                // scope 6 at loop_simd.rs:27:23: 27:25
+        _44 = &_12;                      // scope 6 at loop_simd.rs:27:23: 27:25
+        (_43.0: &u128) = move _44;       // scope 6 at /rustc/efec545293b9263be9edfb283a7aa66350b3acbf\library\std\src\macros.rs:97:28: 97:61
+        StorageDead(_44);                // scope 6 at /rustc/efec545293b9263be9edfb283a7aa66350b3acbf\library\std\src\macros.rs:97:60: 97:61
+        StorageLive(_45);                // scope 6 at /rustc/efec545293b9263be9edfb283a7aa66350b3acbf\library\std\src\macros.rs:97:28: 97:61
+        _45 = _43;                       // scope 6 at /rustc/efec545293b9263be9edfb283a7aa66350b3acbf\library\std\src\macros.rs:97:28: 97:61
+        StorageLive(_46);                // scope 8 at /rustc/efec545293b9263be9edfb283a7aa66350b3acbf\library\std\src\macros.rs:97:28: 97:61
+        StorageLive(_47);                // scope 8 at loop_simd.rs:27:23: 27:25
+        _47 = (_45.0: &u128);            // scope 8 at loop_simd.rs:27:23: 27:25
+        StorageLive(_48);                // scope 8 at loop_simd.rs:27:23: 27:25
+        _48 = <u128 as std::fmt::Display>::fmt as for<'r, 's, 't0> fn(&'r u128, &'s mut std::fmt::Formatter<'t0>) -> std::result::Result<(), std::fmt::Error> (Pointer(ReifyFnPointer)); // scope 8 at loop_simd.rs:27:23: 27:25
+                                         // mir::Constant
+                                         // + span: loop_simd.rs:27:23: 27:25
+                                         // + literal: Const { ty: for<'r, 's, 't0> fn(&'r u128, &'s mut std::fmt::Formatter<'t0>) -> std::result::Result<(), std::fmt::Error> {<u128 as std::fmt::Display>::fmt}, val: Value(Scalar(<ZST>)) }
+        _46 = ArgumentV1::new::<u128>(move _47, move _48) -> bb16; // scope 8 at /rustc/efec545293b9263be9edfb283a7aa66350b3acbf\library\std\src\macros.rs:97:28: 97:61
+                                         // mir::Constant
+                                         // + span: /rustc/efec545293b9263be9edfb283a7aa66350b3acbf\library\std\src\macros.rs:97:28: 97:61
+                                         // + user_ty: UserType(3)
+                                         // + literal: Const { ty: for<'b> fn(&'b u128, for<'r, 's, 't0> fn(&'r u128, &'s mut std::fmt::Formatter<'t0>) -> std::result::Result<(), std::fmt::Error>) -> std::fmt::ArgumentV1<'b> {std::fmt::ArgumentV1::new::<u128>}, val: Value(Scalar(<ZST>)) }
+    }
+
+    bb16: {
+        StorageDead(_48);                // scope 8 at /rustc/efec545293b9263be9edfb283a7aa66350b3acbf\library\std\src\macros.rs:97:60: 97:61
+        StorageDead(_47);                // scope 8 at /rustc/efec545293b9263be9edfb283a7aa66350b3acbf\library\std\src\macros.rs:97:60: 97:61
+        _42 = [move _46];                // scope 8 at /rustc/efec545293b9263be9edfb283a7aa66350b3acbf\library\std\src\macros.rs:97:28: 97:61
+        StorageDead(_46);                // scope 8 at /rustc/efec545293b9263be9edfb283a7aa66350b3acbf\library\std\src\macros.rs:97:60: 97:61
+        StorageDead(_45);                // scope 6 at /rustc/efec545293b9263be9edfb283a7aa66350b3acbf\library\std\src\macros.rs:97:60: 97:61
+        _41 = &_42;                      // scope 6 at /rustc/efec545293b9263be9edfb283a7aa66350b3acbf\library\std\src\macros.rs:97:28: 97:61
+        _40 = _41;                       // scope 6 at /rustc/efec545293b9263be9edfb283a7aa66350b3acbf\library\std\src\macros.rs:97:28: 97:61
+        _39 = move _40 as &[std::fmt::ArgumentV1] (Pointer(Unsize)); // scope 6 at /rustc/efec545293b9263be9edfb283a7aa66350b3acbf\library\std\src\macros.rs:97:28: 97:61
+        StorageDead(_40);                // scope 6 at /rustc/efec545293b9263be9edfb283a7aa66350b3acbf\library\std\src\macros.rs:97:60: 97:61
+        _35 = Arguments::new_v1(move _36, move _39) -> bb17; // scope 6 at /rustc/efec545293b9263be9edfb283a7aa66350b3acbf\library\std\src\macros.rs:97:28: 97:61
+                                         // mir::Constant
+                                         // + span: /rustc/efec545293b9263be9edfb283a7aa66350b3acbf\library\std\src\macros.rs:97:28: 97:61
+                                         // + user_ty: UserType(2)
+                                         // + literal: Const { ty: fn(&[&'static str], &[std::fmt::ArgumentV1]) -> std::fmt::Arguments {std::fmt::Arguments::new_v1}, val: Value(Scalar(<ZST>)) }
+    }
+
+    bb17: {
+        StorageDead(_39);                // scope 6 at /rustc/efec545293b9263be9edfb283a7aa66350b3acbf\library\std\src\macros.rs:97:60: 97:61
+        StorageDead(_36);                // scope 6 at /rustc/efec545293b9263be9edfb283a7aa66350b3acbf\library\std\src\macros.rs:97:60: 97:61
+        _34 = _print(move _35) -> bb18;  // scope 6 at /rustc/efec545293b9263be9edfb283a7aa66350b3acbf\library\std\src\macros.rs:97:9: 97:62
+                                         // mir::Constant
+                                         // + span: /rustc/efec545293b9263be9edfb283a7aa66350b3acbf\library\std\src\macros.rs:97:9: 97:27
+                                         // + literal: Const { ty: for<'r> fn(std::fmt::Arguments<'r>) {std::io::_print}, val: Value(Scalar(<ZST>)) }
+    }
+
+    bb18: {
+        StorageDead(_35);                // scope 6 at /rustc/efec545293b9263be9edfb283a7aa66350b3acbf\library\std\src\macros.rs:97:61: 97:62
+        StorageDead(_43);                // scope 6 at /rustc/efec545293b9263be9edfb283a7aa66350b3acbf\library\std\src\macros.rs:97:62: 97:63
+        StorageDead(_42);                // scope 6 at /rustc/efec545293b9263be9edfb283a7aa66350b3acbf\library\std\src\macros.rs:97:62: 97:63
+        StorageDead(_41);                // scope 6 at /rustc/efec545293b9263be9edfb283a7aa66350b3acbf\library\std\src\macros.rs:97:62: 97:63
+        StorageDead(_38);                // scope 6 at /rustc/efec545293b9263be9edfb283a7aa66350b3acbf\library\std\src\macros.rs:97:62: 97:63
+        StorageDead(_34);                // scope 6 at /rustc/efec545293b9263be9edfb283a7aa66350b3acbf\library\std\src\macros.rs:97:62: 97:63
+        StorageLive(_49);                // scope 6 at loop_simd.rs:28:5: 28:36
+        StorageLive(_50);                // scope 6 at loop_simd.rs:28:13: 28:35
+        StorageLive(_51);                // scope 6 at loop_simd.rs:28:13: 28:27
+        StorageLive(_52);                // scope 6 at loop_simd.rs:28:13: 28:22
+        StorageLive(_53);                // scope 6 at loop_simd.rs:28:14: 28:16
+        _53 = _2;                        // scope 6 at loop_simd.rs:28:14: 28:16
+        StorageLive(_54);                // scope 6 at loop_simd.rs:28:19: 28:21
+        _54 = _11;                       // scope 6 at loop_simd.rs:28:19: 28:21
+        _52 = Sub(move _53, move _54);   // scope 6 at loop_simd.rs:28:13: 28:22
+        StorageDead(_54);                // scope 6 at loop_simd.rs:28:21: 28:22
+        StorageDead(_53);                // scope 6 at loop_simd.rs:28:21: 28:22
+        StorageLive(_55);                // scope 6 at loop_simd.rs:28:25: 28:27
+        _55 = _11;                       // scope 6 at loop_simd.rs:28:25: 28:27
+        _51 = Div(move _52, move _55);   // scope 6 at loop_simd.rs:28:13: 28:27
+        StorageDead(_55);                // scope 6 at loop_simd.rs:28:26: 28:27
+        StorageDead(_52);                // scope 6 at loop_simd.rs:28:26: 28:27
+        _50 = Lt(move _51, const 0.00100000005f32); // scope 6 at loop_simd.rs:28:13: 28:35
+        StorageDead(_51);                // scope 6 at loop_simd.rs:28:34: 28:35
+        _49 = Not(move _50);             // scope 6 at loop_simd.rs:28:5: 28:36
+        StorageDead(_50);                // scope 6 at loop_simd.rs:28:35: 28:36
+        switchInt(move _49) -> [false: bb20, otherwise: bb19]; // scope 6 at loop_simd.rs:28:5: 28:36
+    }
+
+    bb19: {
+        core::panicking::panic(const "assertion failed: (f1 - f2) / f2 < 0.001"); // scope 6 at loop_simd.rs:28:5: 28:36
+                                         // mir::Constant
+                                         // + span: loop_simd.rs:28:5: 28:36
+                                         // + literal: Const { ty: fn(&'static str) -> ! {core::panicking::panic}, val: Value(Scalar(<ZST>)) }
+                                         // ty::Const
+                                         // + ty: &str
+                                         // + val: Value(Slice { data: Allocation { bytes: [97, 115, 115, 101, 114, 116, 105, 111, 110, 32, 102, 97, 105, 108, 101, 100, 58, 32, 40, 102, 49, 32, 45, 32, 102, 50, 41, 32, 47, 32, 102, 50, 32, 60, 32, 48, 46, 48, 48, 49], relocations: Relocations(SortedMap { data: [] }), init_mask: InitMask { blocks: [1099511627775], len: Size { raw: 40 } }, align: Align { pow2: 0 }, mutability: Not, extra: () }, start: 0, end: 40 })
+                                         // mir::Constant
+                                         // + span: no-location
+                                         // + literal: Const { ty: &str, val: Value(Slice { data: Allocation { bytes: [97, 115, 115, 101, 114, 116, 105, 111, 110, 32, 102, 97, 105, 108, 101, 100, 58, 32, 40, 102, 49, 32, 45, 32, 102, 50, 41, 32, 47, 32, 102, 50, 32, 60, 32, 48, 46, 48, 48, 49], relocations: Relocations(SortedMap { data: [] }), init_mask: InitMask { blocks: [1099511627775], len: Size { raw: 40 } }, align: Align { pow2: 0 }, mutability: Not, extra: () }, start: 0, end: 40 }) }
+    }
+
+    bb20: {
+        StorageDead(_49);                // scope 6 at loop_simd.rs:28:35: 28:36
+        StorageDead(_12);                // scope 5 at loop_simd.rs:29:1: 29:2
+        StorageDead(_11);                // scope 4 at loop_simd.rs:29:1: 29:2
+        StorageDead(_10);                // scope 3 at loop_simd.rs:29:1: 29:2
+        StorageDead(_3);                 // scope 2 at loop_simd.rs:29:1: 29:2
+        StorageDead(_2);                 // scope 1 at loop_simd.rs:29:1: 29:2
+        StorageDead(_1);                 // scope 0 at loop_simd.rs:29:1: 29:2
+        return;                          // scope 0 at loop_simd.rs:29:2: 29:2
+    }
+}

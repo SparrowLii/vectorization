@@ -1,0 +1,15 @@
+// MIR for `use_iter::{closure#0}` after PreCodegen
+
+fn use_iter::{closure#0}(_1: &mut [closure@iter_simd.rs:9:27: 9:39], _2: u8) -> u32 {
+    debug v => _2;                       // in scope 0 at iter_simd.rs:9:28: 9:29
+    let mut _0: u32;                     // return place in scope 0 at iter_simd.rs:9:31: 9:31
+    let mut _3: u8;                      // in scope 0 at iter_simd.rs:9:31: 9:32
+
+    bb0: {
+        StorageLive(_3);                 // scope 0 at iter_simd.rs:9:31: 9:32
+        _3 = _2;                         // scope 0 at iter_simd.rs:9:31: 9:32
+        _0 = move _3 as u32 (Misc);      // scope 0 at iter_simd.rs:9:31: 9:39
+        StorageDead(_3);                 // scope 0 at iter_simd.rs:9:38: 9:39
+        return;                          // scope 0 at iter_simd.rs:9:39: 9:39
+    }
+}

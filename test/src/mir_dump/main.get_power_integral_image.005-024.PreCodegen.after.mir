@@ -1,0 +1,336 @@
+// MIR for `get_power_integral_image` after PreCodegen
+
+fn get_power_integral_image(_1: &mut [u8; 75264], _2: &mut Vec<u32>, _3: usize, _4: usize) -> () {
+    debug src => _1;                     // in scope 0 at main.rs:8:33: 8:36
+    debug integral => _2;                // in scope 0 at main.rs:8:55: 8:63
+    debug height => _3;                  // in scope 0 at main.rs:8:79: 8:85
+    debug width => _4;                   // in scope 0 at main.rs:8:94: 8:99
+    let mut _0: ();                      // return place in scope 0 at main.rs:9:1: 9:1
+    let mut _5: std::ops::Range<usize>;  // in scope 0 at main.rs:10:14: 10:23
+    let mut _6: std::ops::Range<usize>;  // in scope 0 at main.rs:10:14: 10:23
+    let mut _7: usize;                   // in scope 0 at main.rs:10:17: 10:23
+    let mut _8: std::ops::Range<usize>;  // in scope 0 at main.rs:10:14: 10:23
+    let mut _9: std::option::Option<usize>; // in scope 0 at main.rs:10:14: 10:23
+    let mut _10: &mut std::ops::Range<usize>; // in scope 0 at main.rs:10:14: 10:23
+    let mut _11: &mut std::ops::Range<usize>; // in scope 0 at main.rs:10:14: 10:23
+    let mut _12: isize;                  // in scope 0 at main.rs:10:5: 20:6
+    let mut _15: usize;                  // in scope 0 at main.rs:11:22: 11:23
+    let mut _16: usize;                  // in scope 0 at main.rs:11:26: 11:31
+    let mut _18: usize;                  // in scope 0 at main.rs:12:24: 12:39
+    let mut _19: usize;                  // in scope 0 at main.rs:12:24: 12:25
+    let mut _20: usize;                  // in scope 0 at main.rs:12:28: 12:39
+    let mut _21: usize;                  // in scope 0 at main.rs:12:29: 12:34
+    let mut _23: usize;                  // in scope 0 at main.rs:13:24: 13:45
+    let mut _24: usize;                  // in scope 0 at main.rs:13:24: 13:31
+    let mut _25: usize;                  // in scope 0 at main.rs:13:25: 13:26
+    let mut _26: usize;                  // in scope 0 at main.rs:13:34: 13:45
+    let mut _27: usize;                  // in scope 0 at main.rs:13:35: 13:40
+    let mut _29: std::ops::Range<usize>; // in scope 0 at main.rs:15:18: 15:26
+    let mut _30: std::ops::Range<usize>; // in scope 0 at main.rs:15:18: 15:26
+    let mut _31: usize;                  // in scope 0 at main.rs:15:21: 15:26
+    let mut _33: std::option::Option<usize>; // in scope 0 at main.rs:15:18: 15:26
+    let mut _34: &mut std::ops::Range<usize>; // in scope 0 at main.rs:15:18: 15:26
+    let mut _35: &mut std::ops::Range<usize>; // in scope 0 at main.rs:15:18: 15:26
+    let mut _36: isize;                  // in scope 0 at main.rs:15:9: 19:10
+    let mut _39: u8;                     // in scope 0 at main.rs:16:23: 16:38
+    let _40: usize;                      // in scope 0 at main.rs:16:27: 16:37
+    let mut _41: usize;                  // in scope 0 at main.rs:16:27: 16:33
+    let mut _42: usize;                  // in scope 0 at main.rs:16:36: 16:37
+    let mut _43: usize;                  // in scope 0 at main.rs:16:23: 16:38
+    let mut _44: bool;                   // in scope 0 at main.rs:16:23: 16:38
+    let mut _45: u32;                    // in scope 0 at main.rs:17:19: 17:22
+    let mut _46: u32;                    // in scope 0 at main.rs:17:25: 17:34
+    let mut _47: u32;                    // in scope 0 at main.rs:17:25: 17:28
+    let mut _48: u32;                    // in scope 0 at main.rs:17:31: 17:34
+    let mut _49: u32;                    // in scope 0 at main.rs:18:38: 18:60
+    let mut _50: &u32;                   // in scope 0 at main.rs:18:38: 18:60
+    let mut _51: &std::vec::Vec<u32>;    // in scope 0 at main.rs:18:38: 18:46
+    let mut _52: usize;                  // in scope 0 at main.rs:18:47: 18:59
+    let mut _53: usize;                  // in scope 0 at main.rs:18:47: 18:55
+    let mut _54: usize;                  // in scope 0 at main.rs:18:58: 18:59
+    let mut _55: u32;                    // in scope 0 at main.rs:18:63: 18:66
+    let mut _56: &mut u32;               // in scope 0 at main.rs:18:13: 18:35
+    let mut _57: &mut std::vec::Vec<u32>; // in scope 0 at main.rs:18:13: 18:21
+    let mut _58: usize;                  // in scope 0 at main.rs:18:22: 18:34
+    let mut _59: usize;                  // in scope 0 at main.rs:18:22: 18:30
+    let mut _60: usize;                  // in scope 0 at main.rs:18:33: 18:34
+    scope 1 {
+        debug iter => _8;                // in scope 1 at main.rs:10:14: 10:23
+        let _13: usize;                  // in scope 1 at main.rs:10:9: 10:10
+        scope 2 {
+            debug y => _13;              // in scope 2 at main.rs:10:9: 10:10
+            let _14: usize;              // in scope 2 at main.rs:11:13: 11:19
+            scope 3 {
+                debug offset => _14;     // in scope 3 at main.rs:11:13: 11:19
+                let _17: usize;          // in scope 3 at main.rs:12:13: 12:21
+                scope 4 {
+                    debug offset_l => _17; // in scope 4 at main.rs:12:13: 12:21
+                    let _22: usize;      // in scope 4 at main.rs:13:13: 13:21
+                    scope 5 {
+                        debug offset_d => _22; // in scope 5 at main.rs:13:13: 13:21
+                        let mut _28: u32; // in scope 5 at main.rs:14:13: 14:20
+                        scope 6 {
+                            debug sum => _28; // in scope 6 at main.rs:14:13: 14:20
+                            let mut _32: std::ops::Range<usize>; // in scope 6 at main.rs:15:18: 15:26
+                            scope 7 {
+                                debug iter => _32; // in scope 7 at main.rs:15:18: 15:26
+                                let _37: usize; // in scope 7 at main.rs:15:13: 15:14
+                                scope 8 {
+                                    debug x => _37; // in scope 8 at main.rs:15:13: 15:14
+                                    let _38: u32; // in scope 8 at main.rs:16:17: 16:20
+                                    scope 9 {
+                                        debug val => _38; // in scope 9 at main.rs:16:17: 16:20
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    bb0: {
+        StorageLive(_5);                 // scope 0 at main.rs:10:14: 10:23
+        StorageLive(_6);                 // scope 0 at main.rs:10:14: 10:23
+        StorageLive(_7);                 // scope 0 at main.rs:10:17: 10:23
+        _7 = _3;                         // scope 0 at main.rs:10:17: 10:23
+        (_6.0: usize) = const 0_usize;   // scope 0 at main.rs:10:14: 10:23
+        (_6.1: usize) = move _7;         // scope 0 at main.rs:10:14: 10:23
+        StorageDead(_7);                 // scope 0 at main.rs:10:22: 10:23
+        _5 = <std::ops::Range<usize> as IntoIterator>::into_iter(move _6) -> bb1; // scope 0 at main.rs:10:14: 10:23
+                                         // mir::Constant
+                                         // + span: main.rs:10:14: 10:23
+                                         // + literal: Const { ty: fn(std::ops::Range<usize>) -> <std::ops::Range<usize> as std::iter::IntoIterator>::IntoIter {<std::ops::Range<usize> as std::iter::IntoIterator>::into_iter}, val: Value(Scalar(<ZST>)) }
+    }
+
+    bb1: {
+        StorageDead(_6);                 // scope 0 at main.rs:10:22: 10:23
+        StorageLive(_8);                 // scope 0 at main.rs:10:14: 10:23
+        _8 = move _5;                    // scope 0 at main.rs:10:14: 10:23
+        goto -> bb2;                     // scope 1 at main.rs:10:5: 20:6
+    }
+
+    bb2: {
+        StorageLive(_9);                 // scope 1 at main.rs:10:14: 10:23
+        StorageLive(_10);                // scope 1 at main.rs:10:14: 10:23
+        StorageLive(_11);                // scope 1 at main.rs:10:14: 10:23
+        _11 = &mut _8;                   // scope 1 at main.rs:10:14: 10:23
+        _10 = &mut (*_11);               // scope 1 at main.rs:10:14: 10:23
+        _9 = <std::ops::Range<usize> as Iterator>::next(move _10) -> bb3; // scope 1 at main.rs:10:14: 10:23
+                                         // mir::Constant
+                                         // + span: main.rs:10:14: 10:23
+                                         // + literal: Const { ty: for<'r> fn(&'r mut std::ops::Range<usize>) -> std::option::Option<<std::ops::Range<usize> as std::iter::Iterator>::Item> {<std::ops::Range<usize> as std::iter::Iterator>::next}, val: Value(Scalar(<ZST>)) }
+    }
+
+    bb3: {
+        StorageDead(_10);                // scope 1 at main.rs:10:22: 10:23
+        _12 = discriminant(_9);          // scope 1 at main.rs:10:14: 10:23
+        switchInt(move _12) -> [0_isize: bb6, 1_isize: bb4, otherwise: bb5]; // scope 1 at main.rs:10:14: 10:23
+    }
+
+    bb4: {
+        StorageLive(_13);                // scope 1 at main.rs:10:9: 10:10
+        _13 = ((_9 as Some).0: usize);   // scope 1 at main.rs:10:9: 10:10
+        StorageLive(_14);                // scope 2 at main.rs:11:13: 11:19
+        StorageLive(_15);                // scope 2 at main.rs:11:22: 11:23
+        _15 = _13;                       // scope 2 at main.rs:11:22: 11:23
+        StorageLive(_16);                // scope 2 at main.rs:11:26: 11:31
+        _16 = _4;                        // scope 2 at main.rs:11:26: 11:31
+        _14 = Mul(move _15, move _16);   // scope 2 at main.rs:11:22: 11:31
+        StorageDead(_16);                // scope 2 at main.rs:11:30: 11:31
+        StorageDead(_15);                // scope 2 at main.rs:11:30: 11:31
+        StorageLive(_17);                // scope 3 at main.rs:12:13: 12:21
+        StorageLive(_18);                // scope 3 at main.rs:12:24: 12:39
+        StorageLive(_19);                // scope 3 at main.rs:12:24: 12:25
+        _19 = _13;                       // scope 3 at main.rs:12:24: 12:25
+        StorageLive(_20);                // scope 3 at main.rs:12:28: 12:39
+        StorageLive(_21);                // scope 3 at main.rs:12:29: 12:34
+        _21 = _4;                        // scope 3 at main.rs:12:29: 12:34
+        _20 = Add(move _21, const 1_usize); // scope 3 at main.rs:12:28: 12:39
+        StorageDead(_21);                // scope 3 at main.rs:12:38: 12:39
+        _18 = Mul(move _19, move _20);   // scope 3 at main.rs:12:24: 12:39
+        StorageDead(_20);                // scope 3 at main.rs:12:38: 12:39
+        StorageDead(_19);                // scope 3 at main.rs:12:38: 12:39
+        _17 = Add(move _18, const 1_usize); // scope 3 at main.rs:12:24: 12:43
+        StorageDead(_18);                // scope 3 at main.rs:12:42: 12:43
+        StorageLive(_22);                // scope 4 at main.rs:13:13: 13:21
+        StorageLive(_23);                // scope 4 at main.rs:13:24: 13:45
+        StorageLive(_24);                // scope 4 at main.rs:13:24: 13:31
+        StorageLive(_25);                // scope 4 at main.rs:13:25: 13:26
+        _25 = _13;                       // scope 4 at main.rs:13:25: 13:26
+        _24 = Add(move _25, const 1_usize); // scope 4 at main.rs:13:24: 13:31
+        StorageDead(_25);                // scope 4 at main.rs:13:30: 13:31
+        StorageLive(_26);                // scope 4 at main.rs:13:34: 13:45
+        StorageLive(_27);                // scope 4 at main.rs:13:35: 13:40
+        _27 = _4;                        // scope 4 at main.rs:13:35: 13:40
+        _26 = Add(move _27, const 1_usize); // scope 4 at main.rs:13:34: 13:45
+        StorageDead(_27);                // scope 4 at main.rs:13:44: 13:45
+        _23 = Mul(move _24, move _26);   // scope 4 at main.rs:13:24: 13:45
+        StorageDead(_26);                // scope 4 at main.rs:13:44: 13:45
+        StorageDead(_24);                // scope 4 at main.rs:13:44: 13:45
+        _22 = Add(move _23, const 1_usize); // scope 4 at main.rs:13:24: 13:49
+        StorageDead(_23);                // scope 4 at main.rs:13:48: 13:49
+        StorageLive(_28);                // scope 5 at main.rs:14:13: 14:20
+        _28 = const 0_u32;               // scope 5 at main.rs:14:27: 14:28
+        StorageLive(_29);                // scope 6 at main.rs:15:18: 15:26
+        StorageLive(_30);                // scope 6 at main.rs:15:18: 15:26
+        StorageLive(_31);                // scope 6 at main.rs:15:21: 15:26
+        _31 = _4;                        // scope 6 at main.rs:15:21: 15:26
+        (_30.0: usize) = const 0_usize;  // scope 6 at main.rs:15:18: 15:26
+        (_30.1: usize) = move _31;       // scope 6 at main.rs:15:18: 15:26
+        StorageDead(_31);                // scope 6 at main.rs:15:25: 15:26
+        _29 = <std::ops::Range<usize> as IntoIterator>::into_iter(move _30) -> bb7; // scope 6 at main.rs:15:18: 15:26
+                                         // mir::Constant
+                                         // + span: main.rs:15:18: 15:26
+                                         // + literal: Const { ty: fn(std::ops::Range<usize>) -> <std::ops::Range<usize> as std::iter::IntoIterator>::IntoIter {<std::ops::Range<usize> as std::iter::IntoIterator>::into_iter}, val: Value(Scalar(<ZST>)) }
+    }
+
+    bb5: {
+        unreachable;                     // scope 1 at main.rs:10:14: 10:23
+    }
+
+    bb6: {
+        StorageDead(_11);                // scope 1 at main.rs:20:5: 20:6
+        StorageDead(_9);                 // scope 1 at main.rs:20:5: 20:6
+        StorageDead(_8);                 // scope 0 at main.rs:20:5: 20:6
+        StorageDead(_5);                 // scope 0 at main.rs:20:5: 20:6
+        return;                          // scope 0 at main.rs:21:2: 21:2
+    }
+
+    bb7: {
+        StorageDead(_30);                // scope 6 at main.rs:15:25: 15:26
+        StorageLive(_32);                // scope 6 at main.rs:15:18: 15:26
+        _32 = move _29;                  // scope 6 at main.rs:15:18: 15:26
+        goto -> bb8;                     // scope 7 at main.rs:15:9: 19:10
+    }
+
+    bb8: {
+        StorageLive(_33);                // scope 7 at main.rs:15:18: 15:26
+        StorageLive(_34);                // scope 7 at main.rs:15:18: 15:26
+        StorageLive(_35);                // scope 7 at main.rs:15:18: 15:26
+        _35 = &mut _32;                  // scope 7 at main.rs:15:18: 15:26
+        _34 = &mut (*_35);               // scope 7 at main.rs:15:18: 15:26
+        _33 = <std::ops::Range<usize> as Iterator>::next(move _34) -> bb9; // scope 7 at main.rs:15:18: 15:26
+                                         // mir::Constant
+                                         // + span: main.rs:15:18: 15:26
+                                         // + literal: Const { ty: for<'r> fn(&'r mut std::ops::Range<usize>) -> std::option::Option<<std::ops::Range<usize> as std::iter::Iterator>::Item> {<std::ops::Range<usize> as std::iter::Iterator>::next}, val: Value(Scalar(<ZST>)) }
+    }
+
+    bb9: {
+        StorageDead(_34);                // scope 7 at main.rs:15:25: 15:26
+        _36 = discriminant(_33);         // scope 7 at main.rs:15:18: 15:26
+        switchInt(move _36) -> [0_isize: bb12, 1_isize: bb10, otherwise: bb11]; // scope 7 at main.rs:15:18: 15:26
+    }
+
+    bb10: {
+        StorageLive(_37);                // scope 7 at main.rs:15:13: 15:14
+        _37 = ((_33 as Some).0: usize);  // scope 7 at main.rs:15:13: 15:14
+        StorageLive(_38);                // scope 8 at main.rs:16:17: 16:20
+        StorageLive(_39);                // scope 8 at main.rs:16:23: 16:38
+        StorageLive(_40);                // scope 8 at main.rs:16:27: 16:37
+        StorageLive(_41);                // scope 8 at main.rs:16:27: 16:33
+        _41 = _14;                       // scope 8 at main.rs:16:27: 16:33
+        StorageLive(_42);                // scope 8 at main.rs:16:36: 16:37
+        _42 = _37;                       // scope 8 at main.rs:16:36: 16:37
+        _40 = Add(move _41, move _42);   // scope 8 at main.rs:16:27: 16:37
+        StorageDead(_42);                // scope 8 at main.rs:16:36: 16:37
+        StorageDead(_41);                // scope 8 at main.rs:16:36: 16:37
+        _43 = const 75264_usize;         // scope 8 at main.rs:16:23: 16:38
+        _44 = Lt(_40, _43);              // scope 8 at main.rs:16:23: 16:38
+        assert(move _44, "index out of bounds: the length is {} but the index is {}", move _43, _40) -> bb13; // scope 8 at main.rs:16:23: 16:38
+    }
+
+    bb11: {
+        unreachable;                     // scope 7 at main.rs:15:18: 15:26
+    }
+
+    bb12: {
+        StorageDead(_35);                // scope 7 at main.rs:19:9: 19:10
+        StorageDead(_33);                // scope 7 at main.rs:19:9: 19:10
+        StorageDead(_32);                // scope 6 at main.rs:19:9: 19:10
+        StorageDead(_29);                // scope 6 at main.rs:19:9: 19:10
+        StorageDead(_28);                // scope 5 at main.rs:20:5: 20:6
+        StorageDead(_22);                // scope 4 at main.rs:20:5: 20:6
+        StorageDead(_17);                // scope 3 at main.rs:20:5: 20:6
+        StorageDead(_14);                // scope 2 at main.rs:20:5: 20:6
+        StorageDead(_13);                // scope 1 at main.rs:20:5: 20:6
+        StorageDead(_11);                // scope 1 at main.rs:20:5: 20:6
+        StorageDead(_9);                 // scope 1 at main.rs:20:5: 20:6
+        goto -> bb2;                     // scope 1 at main.rs:10:5: 20:6
+    }
+
+    bb13: {
+        _39 = (*_1)[_40];                // scope 8 at main.rs:16:23: 16:38
+        _38 = move _39 as u32 (Misc);    // scope 8 at main.rs:16:23: 16:45
+        StorageDead(_39);                // scope 8 at main.rs:16:44: 16:45
+        StorageDead(_40);                // scope 8 at main.rs:16:45: 16:46
+        StorageLive(_45);                // scope 9 at main.rs:17:19: 17:22
+        _45 = _28;                       // scope 9 at main.rs:17:19: 17:22
+        StorageLive(_46);                // scope 9 at main.rs:17:25: 17:34
+        StorageLive(_47);                // scope 9 at main.rs:17:25: 17:28
+        _47 = _38;                       // scope 9 at main.rs:17:25: 17:28
+        StorageLive(_48);                // scope 9 at main.rs:17:31: 17:34
+        _48 = _38;                       // scope 9 at main.rs:17:31: 17:34
+        _46 = Mul(move _47, move _48);   // scope 9 at main.rs:17:25: 17:34
+        StorageDead(_48);                // scope 9 at main.rs:17:33: 17:34
+        StorageDead(_47);                // scope 9 at main.rs:17:33: 17:34
+        _28 = Add(move _45, move _46);   // scope 9 at main.rs:17:13: 17:34
+        StorageDead(_46);                // scope 9 at main.rs:17:33: 17:34
+        StorageDead(_45);                // scope 9 at main.rs:17:33: 17:34
+        StorageLive(_49);                // scope 9 at main.rs:18:38: 18:60
+        StorageLive(_50);                // scope 9 at main.rs:18:38: 18:60
+        StorageLive(_51);                // scope 9 at main.rs:18:38: 18:46
+        _51 = &(*_2);                    // scope 9 at main.rs:18:38: 18:46
+        StorageLive(_52);                // scope 9 at main.rs:18:47: 18:59
+        StorageLive(_53);                // scope 9 at main.rs:18:47: 18:55
+        _53 = _17;                       // scope 9 at main.rs:18:47: 18:55
+        StorageLive(_54);                // scope 9 at main.rs:18:58: 18:59
+        _54 = _37;                       // scope 9 at main.rs:18:58: 18:59
+        _52 = Add(move _53, move _54);   // scope 9 at main.rs:18:47: 18:59
+        StorageDead(_54);                // scope 9 at main.rs:18:58: 18:59
+        StorageDead(_53);                // scope 9 at main.rs:18:58: 18:59
+        _50 = <Vec<u32> as Index<usize>>::index(move _51, move _52) -> bb14; // scope 9 at main.rs:18:38: 18:60
+                                         // mir::Constant
+                                         // + span: main.rs:18:38: 18:60
+                                         // + literal: Const { ty: for<'r> fn(&'r std::vec::Vec<u32>, usize) -> &'r <std::vec::Vec<u32> as std::ops::Index<usize>>::Output {<std::vec::Vec<u32> as std::ops::Index<usize>>::index}, val: Value(Scalar(<ZST>)) }
+    }
+
+    bb14: {
+        _49 = (*_50);                    // scope 9 at main.rs:18:38: 18:60
+        StorageDead(_52);                // scope 9 at main.rs:18:59: 18:60
+        StorageDead(_51);                // scope 9 at main.rs:18:59: 18:60
+        StorageLive(_55);                // scope 9 at main.rs:18:63: 18:66
+        _55 = _28;                       // scope 9 at main.rs:18:63: 18:66
+        StorageLive(_56);                // scope 9 at main.rs:18:13: 18:35
+        StorageLive(_57);                // scope 9 at main.rs:18:13: 18:21
+        _57 = &mut (*_2);                // scope 9 at main.rs:18:13: 18:21
+        StorageLive(_58);                // scope 9 at main.rs:18:22: 18:34
+        StorageLive(_59);                // scope 9 at main.rs:18:22: 18:30
+        _59 = _22;                       // scope 9 at main.rs:18:22: 18:30
+        StorageLive(_60);                // scope 9 at main.rs:18:33: 18:34
+        _60 = _37;                       // scope 9 at main.rs:18:33: 18:34
+        _58 = Add(move _59, move _60);   // scope 9 at main.rs:18:22: 18:34
+        StorageDead(_60);                // scope 9 at main.rs:18:33: 18:34
+        StorageDead(_59);                // scope 9 at main.rs:18:33: 18:34
+        _56 = <Vec<u32> as IndexMut<usize>>::index_mut(move _57, move _58) -> bb15; // scope 9 at main.rs:18:13: 18:35
+                                         // mir::Constant
+                                         // + span: main.rs:18:13: 18:35
+                                         // + literal: Const { ty: for<'r> fn(&'r mut std::vec::Vec<u32>, usize) -> &'r mut <std::vec::Vec<u32> as std::ops::Index<usize>>::Output {<std::vec::Vec<u32> as std::ops::IndexMut<usize>>::index_mut}, val: Value(Scalar(<ZST>)) }
+    }
+
+    bb15: {
+        StorageDead(_58);                // scope 9 at main.rs:18:34: 18:35
+        StorageDead(_57);                // scope 9 at main.rs:18:34: 18:35
+        (*_56) = Add(move _49, move _55); // scope 9 at main.rs:18:13: 18:66
+        StorageDead(_55);                // scope 9 at main.rs:18:65: 18:66
+        StorageDead(_49);                // scope 9 at main.rs:18:65: 18:66
+        StorageDead(_56);                // scope 9 at main.rs:18:66: 18:67
+        StorageDead(_50);                // scope 9 at main.rs:18:66: 18:67
+        StorageDead(_38);                // scope 8 at main.rs:19:9: 19:10
+        StorageDead(_37);                // scope 7 at main.rs:19:9: 19:10
+        StorageDead(_35);                // scope 7 at main.rs:19:9: 19:10
+        StorageDead(_33);                // scope 7 at main.rs:19:9: 19:10
+        goto -> bb8;                     // scope 7 at main.rs:15:9: 19:10
+    }
+}

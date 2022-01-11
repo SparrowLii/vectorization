@@ -1,0 +1,66 @@
+// MIR for `loop_simd::func1` after PreCodegen
+
+fn loop_simd::func1(_1: usize) -> f32 {
+    debug len => _1;                     // in scope 0 at loop_simd.rs:31:10: 31:13
+    let mut _2: usize;                   // in scope 0 at loop_simd.rs:32:9: 32:18
+    let mut _3: bool;                    // in scope 0 at loop_simd.rs:35:12: 35:24
+    let mut _4: usize;                   // in scope 0 at loop_simd.rs:35:12: 35:17
+    let mut _5: usize;                   // in scope 0 at loop_simd.rs:35:21: 35:24
+    let mut _6: f32;                     // in scope 0 at loop_simd.rs:38:16: 38:37
+    let mut _7: f32;                     // in scope 0 at loop_simd.rs:38:16: 38:30
+    let mut _8: usize;                   // in scope 0 at loop_simd.rs:38:17: 38:22
+    scope 1 {
+        debug index => _2;               // in scope 1 at loop_simd.rs:32:9: 32:18
+        let mut _0: f32;                 // return place in scope 1 at loop_simd.rs:33:9: 33:16
+        scope 2 {
+            debug sum => _0;             // in scope 2 at loop_simd.rs:33:9: 33:16
+        }
+    }
+
+    bb0: {
+        StorageLive(_2);                 // scope 0 at loop_simd.rs:32:9: 32:18
+        _2 = const 0_usize;              // scope 0 at loop_simd.rs:32:21: 32:22
+        _0 = const 0f32;                 // scope 1 at loop_simd.rs:33:24: 33:26
+        goto -> bb1;                     // scope 2 at loop_simd.rs:34:5: 40:6
+    }
+
+    bb1: {
+        StorageLive(_3);                 // scope 2 at loop_simd.rs:35:12: 35:24
+        StorageLive(_4);                 // scope 2 at loop_simd.rs:35:12: 35:17
+        _4 = _2;                         // scope 2 at loop_simd.rs:35:12: 35:17
+        StorageLive(_5);                 // scope 2 at loop_simd.rs:35:21: 35:24
+        _5 = _1;                         // scope 2 at loop_simd.rs:35:21: 35:24
+        _3 = Ge(move _4, move _5);       // scope 2 at loop_simd.rs:35:12: 35:24
+        StorageDead(_5);                 // scope 2 at loop_simd.rs:35:23: 35:24
+        StorageDead(_4);                 // scope 2 at loop_simd.rs:35:23: 35:24
+        switchInt(move _3) -> [false: bb3, otherwise: bb2]; // scope 2 at loop_simd.rs:35:12: 35:24
+    }
+
+    bb2: {
+        StorageDead(_3);                 // scope 2 at loop_simd.rs:37:9: 37:10
+        StorageDead(_2);                 // scope 0 at loop_simd.rs:42:1: 42:2
+        return;                          // scope 0 at loop_simd.rs:42:2: 42:2
+    }
+
+    bb3: {
+        StorageDead(_3);                 // scope 2 at loop_simd.rs:37:9: 37:10
+        StorageLive(_6);                 // scope 2 at loop_simd.rs:38:16: 38:37
+        StorageLive(_7);                 // scope 2 at loop_simd.rs:38:16: 38:30
+        StorageLive(_8);                 // scope 2 at loop_simd.rs:38:17: 38:22
+        _8 = _2;                         // scope 2 at loop_simd.rs:38:17: 38:22
+        _7 = move _8 as f32 (Misc);      // scope 2 at loop_simd.rs:38:16: 38:30
+        StorageDead(_8);                 // scope 2 at loop_simd.rs:38:29: 38:30
+        _6 = f32::<impl f32>::sqrt(move _7) -> bb4; // scope 2 at loop_simd.rs:38:16: 38:37
+                                         // mir::Constant
+                                         // + span: loop_simd.rs:38:31: 38:35
+                                         // + literal: Const { ty: fn(f32) -> f32 {std::f32::<impl f32>::sqrt}, val: Value(Scalar(<ZST>)) }
+    }
+
+    bb4: {
+        StorageDead(_7);                 // scope 2 at loop_simd.rs:38:36: 38:37
+        _0 = Add(_0, move _6);           // scope 2 at loop_simd.rs:38:9: 38:37
+        StorageDead(_6);                 // scope 2 at loop_simd.rs:38:36: 38:37
+        _2 = Add(_2, const 1_usize);     // scope 2 at loop_simd.rs:39:9: 39:19
+        goto -> bb1;                     // scope 2 at loop_simd.rs:34:5: 40:6
+    }
+}

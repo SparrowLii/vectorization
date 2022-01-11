@@ -1,0 +1,430 @@
+// MIR for `iter_simd::func2` after PreCodegen
+
+fn iter_simd::func2(_1: &[u8], _2: &[u32], _3: &mut [u32]) -> () {
+    debug src => _1;                     // in scope 0 at iter_simd.rs:25:10: 25:13
+    debug src2 => _2;                    // in scope 0 at iter_simd.rs:25:21: 25:25
+    debug val => _3;                     // in scope 0 at iter_simd.rs:25:35: 25:38
+    let mut _0: ();                      // return place in scope 0 at iter_simd.rs:25:52: 25:52
+    let mut _4: u32;                     // in scope 0 at iter_simd.rs:26:9: 26:16
+    let mut _8: bool;                    // in scope 0 at iter_simd.rs:32:16: 32:26
+    let mut _9: usize;                   // in scope 0 at iter_simd.rs:32:16: 32:21
+    let mut _10: bool;                   // in scope 0 at iter_simd.rs:35:16: 35:30
+    let mut _11: usize;                  // in scope 0 at iter_simd.rs:35:16: 35:17
+    let mut _12: usize;                  // in scope 0 at iter_simd.rs:35:21: 35:30
+    let mut _13: &[u8];                  // in scope 0 at iter_simd.rs:35:21: 35:30
+    let mut _14: usize;                  // in scope 0 at iter_simd.rs:38:25: 38:26
+    let _15: usize;                      // in scope 0 at iter_simd.rs:38:16: 38:21
+    let mut _16: usize;                  // in scope 0 at iter_simd.rs:38:13: 38:22
+    let mut _17: bool;                   // in scope 0 at iter_simd.rs:38:13: 38:22
+    let mut _19: *const [u8; 4];         // in scope 0 at iter_simd.rs:44:38: 44:68
+    let mut _20: *const u8;              // in scope 0 at iter_simd.rs:44:38: 44:61
+    let mut _21: *const u8;              // in scope 0 at iter_simd.rs:44:38: 44:50
+    let mut _22: &[u8];                  // in scope 0 at iter_simd.rs:44:38: 44:50
+    let mut _23: usize;                  // in scope 0 at iter_simd.rs:44:55: 44:60
+    let _24: usize;                      // in scope 0 at iter_simd.rs:44:58: 44:59
+    let mut _26: bool;                   // in scope 0 at iter_simd.rs:50:16: 50:26
+    let mut _27: usize;                  // in scope 0 at iter_simd.rs:50:16: 50:21
+    let mut _28: u8;                     // in scope 0 at iter_simd.rs:53:25: 53:33
+    let _29: usize;                      // in scope 0 at iter_simd.rs:53:27: 53:32
+    let mut _30: usize;                  // in scope 0 at iter_simd.rs:53:25: 53:33
+    let mut _31: bool;                   // in scope 0 at iter_simd.rs:53:25: 53:33
+    let _32: usize;                      // in scope 0 at iter_simd.rs:53:16: 53:21
+    let mut _33: usize;                  // in scope 0 at iter_simd.rs:53:13: 53:22
+    let mut _34: bool;                   // in scope 0 at iter_simd.rs:53:13: 53:22
+    let mut _35: [u32; 4];               // in scope 0 at iter_simd.rs:57:14: 59:10
+    let mut _36: [u32; 4];               // in scope 0 at iter_simd.rs:58:22: 58:24
+    let mut _37: [u32; 4];               // in scope 0 at iter_simd.rs:58:26: 58:28
+    let mut _39: bool;                   // in scope 0 at iter_simd.rs:64:16: 64:26
+    let mut _40: usize;                  // in scope 0 at iter_simd.rs:64:16: 64:21
+    let mut _41: u32;                    // in scope 0 at iter_simd.rs:67:20: 67:29
+    let _42: usize;                      // in scope 0 at iter_simd.rs:67:23: 67:28
+    let mut _43: usize;                  // in scope 0 at iter_simd.rs:67:20: 67:29
+    let mut _44: bool;                   // in scope 0 at iter_simd.rs:67:20: 67:29
+    let mut _45: u32;                    // in scope 0 at iter_simd.rs:68:25: 68:28
+    let _46: usize;                      // in scope 0 at iter_simd.rs:68:16: 68:21
+    let mut _47: usize;                  // in scope 0 at iter_simd.rs:68:13: 68:22
+    let mut _48: bool;                   // in scope 0 at iter_simd.rs:68:13: 68:22
+    let mut _50: *const [u32; 4];        // in scope 0 at iter_simd.rs:73:38: 73:69
+    let mut _51: *const u32;             // in scope 0 at iter_simd.rs:73:38: 73:62
+    let mut _52: *const u32;             // in scope 0 at iter_simd.rs:73:38: 73:51
+    let mut _53: &[u32];                 // in scope 0 at iter_simd.rs:73:38: 73:51
+    let mut _54: usize;                  // in scope 0 at iter_simd.rs:73:56: 73:61
+    let _55: usize;                      // in scope 0 at iter_simd.rs:73:59: 73:60
+    let mut _56: [u32; 4];               // in scope 0 at iter_simd.rs:76:15: 78:10
+    let mut _57: [u32; 4];               // in scope 0 at iter_simd.rs:77:22: 77:25
+    let mut _58: [u32; 4];               // in scope 0 at iter_simd.rs:77:27: 77:29
+    let _59: ();                         // in scope 0 at iter_simd.rs:81:13: 81:68
+    let mut _60: *mut [u32; 4];          // in scope 0 at iter_simd.rs:81:39: 81:62
+    let mut _61: *mut u32;               // in scope 0 at iter_simd.rs:81:39: 81:55
+    let mut _62: &mut [u32];             // in scope 0 at iter_simd.rs:81:39: 81:55
+    let mut _63: [u32; 4];               // in scope 0 at iter_simd.rs:81:64: 81:67
+    scope 1 {
+        debug sum => _4;                 // in scope 1 at iter_simd.rs:26:9: 26:16
+        let mut _5: usize;               // in scope 1 at iter_simd.rs:27:9: 27:14
+        scope 2 {
+            debug x => _5;               // in scope 2 at iter_simd.rs:27:9: 27:14
+            let mut _6: [usize; 4];      // in scope 2 at iter_simd.rs:29:13: 29:19
+            scope 3 {
+                debug xv => _6;          // in scope 3 at iter_simd.rs:29:13: 29:19
+                let mut _7: usize;       // in scope 3 at iter_simd.rs:30:13: 30:22
+                scope 4 {
+                    debug inner => _7;   // in scope 4 at iter_simd.rs:30:13: 30:22
+                    let _18: [u8; 4];    // in scope 4 at iter_simd.rs:43:13: 43:14
+                    scope 5 {
+                        debug v => _18;  // in scope 5 at iter_simd.rs:43:13: 43:14
+                        let mut _25: [u32; 4]; // in scope 5 at iter_simd.rs:47:13: 47:19
+                        scope 7 {
+                            debug vv => _25; // in scope 7 at iter_simd.rs:47:13: 47:19
+                            let mut _38: [u32; 4]; // in scope 7 at iter_simd.rs:61:13: 61:19
+                            scope 8 {
+                            }
+                            scope 9 {
+                                debug sv => _38; // in scope 9 at iter_simd.rs:61:13: 61:19
+                                let mut _49: [u32; 4]; // in scope 9 at iter_simd.rs:72:13: 72:20
+                                scope 10 {
+                                    debug ssv => _49; // in scope 10 at iter_simd.rs:72:13: 72:20
+                                    scope 12 {
+                                    }
+                                    scope 13 {
+                                    }
+                                }
+                                scope 11 {
+                                }
+                            }
+                        }
+                    }
+                    scope 6 {
+                    }
+                }
+            }
+        }
+    }
+
+    bb0: {
+        StorageLive(_4);                 // scope 0 at iter_simd.rs:26:9: 26:16
+        _4 = const 0_u32;                // scope 0 at iter_simd.rs:26:19: 26:20
+        StorageLive(_5);                 // scope 1 at iter_simd.rs:27:9: 27:14
+        _5 = const 0_usize;              // scope 1 at iter_simd.rs:27:17: 27:18
+        goto -> bb1;                     // scope 2 at iter_simd.rs:28:5: 83:6
+    }
+
+    bb1: {
+        StorageLive(_6);                 // scope 2 at iter_simd.rs:29:13: 29:19
+        _6 = [const 0_usize; 4];         // scope 2 at iter_simd.rs:29:34: 29:40
+        StorageLive(_7);                 // scope 3 at iter_simd.rs:30:13: 30:22
+        _7 = const 0_usize;              // scope 3 at iter_simd.rs:30:25: 30:26
+        goto -> bb2;                     // scope 4 at iter_simd.rs:31:9: 41:10
+    }
+
+    bb2: {
+        StorageLive(_8);                 // scope 4 at iter_simd.rs:32:16: 32:26
+        StorageLive(_9);                 // scope 4 at iter_simd.rs:32:16: 32:21
+        _9 = _7;                         // scope 4 at iter_simd.rs:32:16: 32:21
+        _8 = Ge(move _9, const 4_usize); // scope 4 at iter_simd.rs:32:16: 32:26
+        StorageDead(_9);                 // scope 4 at iter_simd.rs:32:25: 32:26
+        switchInt(move _8) -> [false: bb4, otherwise: bb3]; // scope 4 at iter_simd.rs:32:16: 32:26
+    }
+
+    bb3: {
+        StorageDead(_8);                 // scope 4 at iter_simd.rs:34:13: 34:14
+        goto -> bb8;                     // scope 4 at no-location
+    }
+
+    bb4: {
+        StorageDead(_8);                 // scope 4 at iter_simd.rs:34:13: 34:14
+        StorageLive(_10);                // scope 4 at iter_simd.rs:35:16: 35:30
+        StorageLive(_11);                // scope 4 at iter_simd.rs:35:16: 35:17
+        _11 = _5;                        // scope 4 at iter_simd.rs:35:16: 35:17
+        StorageLive(_12);                // scope 4 at iter_simd.rs:35:21: 35:30
+        StorageLive(_13);                // scope 4 at iter_simd.rs:35:21: 35:30
+        _13 = _1;                        // scope 4 at iter_simd.rs:35:21: 35:30
+        _12 = Len((*_13));               // scope 4 at iter_simd.rs:35:21: 35:30
+        StorageDead(_13);                // scope 4 at iter_simd.rs:35:29: 35:30
+        _10 = Ge(move _11, move _12);    // scope 4 at iter_simd.rs:35:16: 35:30
+        StorageDead(_12);                // scope 4 at iter_simd.rs:35:29: 35:30
+        StorageDead(_11);                // scope 4 at iter_simd.rs:35:29: 35:30
+        switchInt(move _10) -> [false: bb6, otherwise: bb5]; // scope 4 at iter_simd.rs:35:16: 35:30
+    }
+
+    bb5: {
+        StorageDead(_10);                // scope 4 at iter_simd.rs:37:13: 37:14
+        goto -> bb8;                     // scope 4 at no-location
+    }
+
+    bb6: {
+        StorageDead(_10);                // scope 4 at iter_simd.rs:37:13: 37:14
+        StorageLive(_14);                // scope 4 at iter_simd.rs:38:25: 38:26
+        _14 = _5;                        // scope 4 at iter_simd.rs:38:25: 38:26
+        StorageLive(_15);                // scope 4 at iter_simd.rs:38:16: 38:21
+        _15 = _7;                        // scope 4 at iter_simd.rs:38:16: 38:21
+        _16 = const 4_usize;             // scope 4 at iter_simd.rs:38:13: 38:22
+        _17 = Lt(_15, _16);              // scope 4 at iter_simd.rs:38:13: 38:22
+        assert(move _17, "index out of bounds: the length is {} but the index is {}", move _16, _15) -> bb7; // scope 4 at iter_simd.rs:38:13: 38:22
+    }
+
+    bb7: {
+        _6[_15] = move _14;              // scope 4 at iter_simd.rs:38:13: 38:26
+        StorageDead(_14);                // scope 4 at iter_simd.rs:38:25: 38:26
+        StorageDead(_15);                // scope 4 at iter_simd.rs:38:26: 38:27
+        _5 = Add(_5, const 1_usize);     // scope 4 at iter_simd.rs:39:13: 39:19
+        _7 = Add(_7, const 1_usize);     // scope 4 at iter_simd.rs:40:13: 40:23
+        goto -> bb2;                     // scope 4 at iter_simd.rs:31:9: 41:10
+    }
+
+    bb8: {
+        StorageLive(_18);                // scope 4 at iter_simd.rs:43:13: 43:14
+        StorageLive(_19);                // scope 6 at iter_simd.rs:44:38: 44:68
+        StorageLive(_20);                // scope 6 at iter_simd.rs:44:38: 44:61
+        StorageLive(_21);                // scope 6 at iter_simd.rs:44:38: 44:50
+        StorageLive(_22);                // scope 6 at iter_simd.rs:44:38: 44:50
+        _22 = _1;                        // scope 6 at iter_simd.rs:44:38: 44:50
+        _21 = core::slice::<impl [u8]>::as_ptr(move _22) -> bb9; // scope 6 at iter_simd.rs:44:38: 44:50
+                                         // mir::Constant
+                                         // + span: iter_simd.rs:44:42: 44:48
+                                         // + literal: Const { ty: for<'r> fn(&'r [u8]) -> *const u8 {core::slice::<impl [u8]>::as_ptr}, val: Value(Scalar(<ZST>)) }
+    }
+
+    bb9: {
+        StorageDead(_22);                // scope 6 at iter_simd.rs:44:49: 44:50
+        StorageLive(_23);                // scope 6 at iter_simd.rs:44:55: 44:60
+        StorageLive(_24);                // scope 6 at iter_simd.rs:44:58: 44:59
+        _24 = const 0_usize;             // scope 6 at iter_simd.rs:44:58: 44:59
+        _23 = _6[_24];                   // scope 6 at iter_simd.rs:44:55: 44:60
+        _20 = ptr::const_ptr::<impl *const u8>::add(move _21, move _23) -> bb10; // scope 6 at iter_simd.rs:44:38: 44:61
+                                         // mir::Constant
+                                         // + span: iter_simd.rs:44:51: 44:54
+                                         // + literal: Const { ty: unsafe fn(*const u8, usize) -> *const u8 {std::ptr::const_ptr::<impl *const u8>::add}, val: Value(Scalar(<ZST>)) }
+    }
+
+    bb10: {
+        StorageDead(_23);                // scope 6 at iter_simd.rs:44:60: 44:61
+        StorageDead(_21);                // scope 6 at iter_simd.rs:44:60: 44:61
+        _19 = ptr::const_ptr::<impl *const u8>::cast::<[u8; 4]>(move _20) -> bb11; // scope 6 at iter_simd.rs:44:38: 44:68
+                                         // mir::Constant
+                                         // + span: iter_simd.rs:44:62: 44:66
+                                         // + literal: Const { ty: fn(*const u8) -> *const [u8; 4] {std::ptr::const_ptr::<impl *const u8>::cast::<[u8; 4]>}, val: Value(Scalar(<ZST>)) }
+    }
+
+    bb11: {
+        StorageDead(_20);                // scope 6 at iter_simd.rs:44:67: 44:68
+        _18 = read_unaligned::<[u8; 4]>(move _19) -> bb12; // scope 6 at iter_simd.rs:44:13: 44:69
+                                         // mir::Constant
+                                         // + span: iter_simd.rs:44:13: 44:37
+                                         // + literal: Const { ty: unsafe fn(*const [u8; 4]) -> [u8; 4] {std::ptr::read_unaligned::<[u8; 4]>}, val: Value(Scalar(<ZST>)) }
+    }
+
+    bb12: {
+        StorageDead(_19);                // scope 6 at iter_simd.rs:44:68: 44:69
+        StorageDead(_24);                // scope 4 at iter_simd.rs:45:10: 45:11
+        StorageLive(_25);                // scope 5 at iter_simd.rs:47:13: 47:19
+        _25 = [const 0_u32; 4];          // scope 5 at iter_simd.rs:47:32: 47:38
+        _7 = const 0_usize;              // scope 7 at iter_simd.rs:48:9: 48:18
+        goto -> bb13;                    // scope 7 at iter_simd.rs:49:9: 55:10
+    }
+
+    bb13: {
+        StorageLive(_26);                // scope 7 at iter_simd.rs:50:16: 50:26
+        StorageLive(_27);                // scope 7 at iter_simd.rs:50:16: 50:21
+        _27 = _7;                        // scope 7 at iter_simd.rs:50:16: 50:21
+        _26 = Ge(move _27, const 4_usize); // scope 7 at iter_simd.rs:50:16: 50:26
+        StorageDead(_27);                // scope 7 at iter_simd.rs:50:25: 50:26
+        switchInt(move _26) -> [false: bb15, otherwise: bb14]; // scope 7 at iter_simd.rs:50:16: 50:26
+    }
+
+    bb14: {
+        StorageDead(_26);                // scope 7 at iter_simd.rs:52:13: 52:14
+        StorageLive(_35);                // scope 7 at iter_simd.rs:57:14: 59:10
+        StorageLive(_36);                // scope 8 at iter_simd.rs:58:22: 58:24
+        _36 = _25;                       // scope 8 at iter_simd.rs:58:22: 58:24
+        StorageLive(_37);                // scope 8 at iter_simd.rs:58:26: 58:28
+        _37 = _25;                       // scope 8 at iter_simd.rs:58:26: 58:28
+        _35 = iter_simd::simd_mul::<[u32; 4]>(move _36, move _37) -> bb18; // scope 8 at iter_simd.rs:58:13: 58:29
+                                         // mir::Constant
+                                         // + span: iter_simd.rs:58:13: 58:21
+                                         // + literal: Const { ty: unsafe extern "platform-intrinsic" fn([u32; 4], [u32; 4]) -> [u32; 4] {iter_simd::simd_mul::<[u32; 4]>}, val: Value(Scalar(<ZST>)) }
+    }
+
+    bb15: {
+        StorageDead(_26);                // scope 7 at iter_simd.rs:52:13: 52:14
+        StorageLive(_28);                // scope 7 at iter_simd.rs:53:25: 53:33
+        StorageLive(_29);                // scope 7 at iter_simd.rs:53:27: 53:32
+        _29 = _7;                        // scope 7 at iter_simd.rs:53:27: 53:32
+        _30 = const 4_usize;             // scope 7 at iter_simd.rs:53:25: 53:33
+        _31 = Lt(_29, _30);              // scope 7 at iter_simd.rs:53:25: 53:33
+        assert(move _31, "index out of bounds: the length is {} but the index is {}", move _30, _29) -> bb16; // scope 7 at iter_simd.rs:53:25: 53:33
+    }
+
+    bb16: {
+        _28 = _18[_29];                  // scope 7 at iter_simd.rs:53:25: 53:33
+        StorageLive(_32);                // scope 7 at iter_simd.rs:53:16: 53:21
+        _32 = _7;                        // scope 7 at iter_simd.rs:53:16: 53:21
+        _33 = const 4_usize;             // scope 7 at iter_simd.rs:53:13: 53:22
+        _34 = Lt(_32, _33);              // scope 7 at iter_simd.rs:53:13: 53:22
+        assert(move _34, "index out of bounds: the length is {} but the index is {}", move _33, _32) -> bb17; // scope 7 at iter_simd.rs:53:13: 53:22
+    }
+
+    bb17: {
+        _25[_32] = move _28 as u32 (Misc); // scope 7 at iter_simd.rs:53:13: 53:40
+        StorageDead(_28);                // scope 7 at iter_simd.rs:53:39: 53:40
+        StorageDead(_32);                // scope 7 at iter_simd.rs:53:40: 53:41
+        StorageDead(_29);                // scope 7 at iter_simd.rs:53:40: 53:41
+        _7 = Add(_7, const 1_usize);     // scope 7 at iter_simd.rs:54:13: 54:23
+        goto -> bb13;                    // scope 7 at iter_simd.rs:49:9: 55:10
+    }
+
+    bb18: {
+        StorageDead(_37);                // scope 8 at iter_simd.rs:58:28: 58:29
+        StorageDead(_36);                // scope 8 at iter_simd.rs:58:28: 58:29
+        _25 = move _35;                  // scope 7 at iter_simd.rs:57:9: 59:10
+        StorageDead(_35);                // scope 7 at iter_simd.rs:59:9: 59:10
+        StorageLive(_38);                // scope 7 at iter_simd.rs:61:13: 61:19
+        _38 = [const 0_u32; 4];          // scope 7 at iter_simd.rs:61:32: 61:38
+        _7 = const 0_usize;              // scope 9 at iter_simd.rs:62:9: 62:18
+        goto -> bb19;                    // scope 9 at iter_simd.rs:63:9: 70:10
+    }
+
+    bb19: {
+        StorageLive(_39);                // scope 9 at iter_simd.rs:64:16: 64:26
+        StorageLive(_40);                // scope 9 at iter_simd.rs:64:16: 64:21
+        _40 = _7;                        // scope 9 at iter_simd.rs:64:16: 64:21
+        _39 = Ge(move _40, const 4_usize); // scope 9 at iter_simd.rs:64:16: 64:26
+        StorageDead(_40);                // scope 9 at iter_simd.rs:64:25: 64:26
+        switchInt(move _39) -> [false: bb21, otherwise: bb20]; // scope 9 at iter_simd.rs:64:16: 64:26
+    }
+
+    bb20: {
+        StorageDead(_39);                // scope 9 at iter_simd.rs:66:13: 66:14
+        StorageLive(_49);                // scope 9 at iter_simd.rs:72:13: 72:20
+        StorageLive(_50);                // scope 11 at iter_simd.rs:73:38: 73:69
+        StorageLive(_51);                // scope 11 at iter_simd.rs:73:38: 73:62
+        StorageLive(_52);                // scope 11 at iter_simd.rs:73:38: 73:51
+        StorageLive(_53);                // scope 11 at iter_simd.rs:73:38: 73:51
+        _53 = _2;                        // scope 11 at iter_simd.rs:73:38: 73:51
+        _52 = core::slice::<impl [u32]>::as_ptr(move _53) -> bb24; // scope 11 at iter_simd.rs:73:38: 73:51
+                                         // mir::Constant
+                                         // + span: iter_simd.rs:73:43: 73:49
+                                         // + literal: Const { ty: for<'r> fn(&'r [u32]) -> *const u32 {core::slice::<impl [u32]>::as_ptr}, val: Value(Scalar(<ZST>)) }
+    }
+
+    bb21: {
+        StorageDead(_39);                // scope 9 at iter_simd.rs:66:13: 66:14
+        StorageLive(_41);                // scope 9 at iter_simd.rs:67:20: 67:29
+        StorageLive(_42);                // scope 9 at iter_simd.rs:67:23: 67:28
+        _42 = _7;                        // scope 9 at iter_simd.rs:67:23: 67:28
+        _43 = const 4_usize;             // scope 9 at iter_simd.rs:67:20: 67:29
+        _44 = Lt(_42, _43);              // scope 9 at iter_simd.rs:67:20: 67:29
+        assert(move _44, "index out of bounds: the length is {} but the index is {}", move _43, _42) -> bb22; // scope 9 at iter_simd.rs:67:20: 67:29
+    }
+
+    bb22: {
+        _41 = _25[_42];                  // scope 9 at iter_simd.rs:67:20: 67:29
+        _4 = Add(_4, move _41);          // scope 9 at iter_simd.rs:67:13: 67:29
+        StorageDead(_41);                // scope 9 at iter_simd.rs:67:28: 67:29
+        StorageDead(_42);                // scope 9 at iter_simd.rs:67:29: 67:30
+        StorageLive(_45);                // scope 9 at iter_simd.rs:68:25: 68:28
+        _45 = _4;                        // scope 9 at iter_simd.rs:68:25: 68:28
+        StorageLive(_46);                // scope 9 at iter_simd.rs:68:16: 68:21
+        _46 = _7;                        // scope 9 at iter_simd.rs:68:16: 68:21
+        _47 = const 4_usize;             // scope 9 at iter_simd.rs:68:13: 68:22
+        _48 = Lt(_46, _47);              // scope 9 at iter_simd.rs:68:13: 68:22
+        assert(move _48, "index out of bounds: the length is {} but the index is {}", move _47, _46) -> bb23; // scope 9 at iter_simd.rs:68:13: 68:22
+    }
+
+    bb23: {
+        _38[_46] = move _45;             // scope 9 at iter_simd.rs:68:13: 68:28
+        StorageDead(_45);                // scope 9 at iter_simd.rs:68:27: 68:28
+        StorageDead(_46);                // scope 9 at iter_simd.rs:68:28: 68:29
+        _7 = Add(_7, const 1_usize);     // scope 9 at iter_simd.rs:69:13: 69:23
+        goto -> bb19;                    // scope 9 at iter_simd.rs:63:9: 70:10
+    }
+
+    bb24: {
+        StorageDead(_53);                // scope 11 at iter_simd.rs:73:50: 73:51
+        StorageLive(_54);                // scope 11 at iter_simd.rs:73:56: 73:61
+        StorageLive(_55);                // scope 11 at iter_simd.rs:73:59: 73:60
+        _55 = const 0_usize;             // scope 11 at iter_simd.rs:73:59: 73:60
+        _54 = _6[_55];                   // scope 11 at iter_simd.rs:73:56: 73:61
+        _51 = ptr::const_ptr::<impl *const u32>::add(move _52, move _54) -> bb25; // scope 11 at iter_simd.rs:73:38: 73:62
+                                         // mir::Constant
+                                         // + span: iter_simd.rs:73:52: 73:55
+                                         // + literal: Const { ty: unsafe fn(*const u32, usize) -> *const u32 {std::ptr::const_ptr::<impl *const u32>::add}, val: Value(Scalar(<ZST>)) }
+    }
+
+    bb25: {
+        StorageDead(_54);                // scope 11 at iter_simd.rs:73:61: 73:62
+        StorageDead(_52);                // scope 11 at iter_simd.rs:73:61: 73:62
+        _50 = ptr::const_ptr::<impl *const u32>::cast::<[u32; 4]>(move _51) -> bb26; // scope 11 at iter_simd.rs:73:38: 73:69
+                                         // mir::Constant
+                                         // + span: iter_simd.rs:73:63: 73:67
+                                         // + literal: Const { ty: fn(*const u32) -> *const [u32; 4] {std::ptr::const_ptr::<impl *const u32>::cast::<[u32; 4]>}, val: Value(Scalar(<ZST>)) }
+    }
+
+    bb26: {
+        StorageDead(_51);                // scope 11 at iter_simd.rs:73:68: 73:69
+        _49 = read_unaligned::<[u32; 4]>(move _50) -> bb27; // scope 11 at iter_simd.rs:73:13: 73:70
+                                         // mir::Constant
+                                         // + span: iter_simd.rs:73:13: 73:37
+                                         // + literal: Const { ty: unsafe fn(*const [u32; 4]) -> [u32; 4] {std::ptr::read_unaligned::<[u32; 4]>}, val: Value(Scalar(<ZST>)) }
+    }
+
+    bb27: {
+        StorageDead(_50);                // scope 11 at iter_simd.rs:73:69: 73:70
+        StorageDead(_55);                // scope 9 at iter_simd.rs:74:10: 74:11
+        StorageLive(_56);                // scope 10 at iter_simd.rs:76:15: 78:10
+        StorageLive(_57);                // scope 12 at iter_simd.rs:77:22: 77:25
+        _57 = _49;                       // scope 12 at iter_simd.rs:77:22: 77:25
+        StorageLive(_58);                // scope 12 at iter_simd.rs:77:27: 77:29
+        _58 = _38;                       // scope 12 at iter_simd.rs:77:27: 77:29
+        _56 = iter_simd::simd_add::<[u32; 4]>(move _57, move _58) -> bb28; // scope 12 at iter_simd.rs:77:13: 77:30
+                                         // mir::Constant
+                                         // + span: iter_simd.rs:77:13: 77:21
+                                         // + literal: Const { ty: unsafe extern "platform-intrinsic" fn([u32; 4], [u32; 4]) -> [u32; 4] {iter_simd::simd_add::<[u32; 4]>}, val: Value(Scalar(<ZST>)) }
+    }
+
+    bb28: {
+        StorageDead(_58);                // scope 12 at iter_simd.rs:77:29: 77:30
+        StorageDead(_57);                // scope 12 at iter_simd.rs:77:29: 77:30
+        _49 = move _56;                  // scope 10 at iter_simd.rs:76:9: 78:10
+        StorageDead(_56);                // scope 10 at iter_simd.rs:78:9: 78:10
+        StorageLive(_59);                // scope 13 at iter_simd.rs:81:13: 81:68
+        StorageLive(_60);                // scope 13 at iter_simd.rs:81:39: 81:62
+        StorageLive(_61);                // scope 13 at iter_simd.rs:81:39: 81:55
+        StorageLive(_62);                // scope 13 at iter_simd.rs:81:39: 81:55
+        _62 = &mut (*_3);                // scope 13 at iter_simd.rs:81:39: 81:55
+        _61 = core::slice::<impl [u32]>::as_mut_ptr(move _62) -> bb29; // scope 13 at iter_simd.rs:81:39: 81:55
+                                         // mir::Constant
+                                         // + span: iter_simd.rs:81:43: 81:53
+                                         // + literal: Const { ty: for<'r> fn(&'r mut [u32]) -> *mut u32 {core::slice::<impl [u32]>::as_mut_ptr}, val: Value(Scalar(<ZST>)) }
+    }
+
+    bb29: {
+        StorageDead(_62);                // scope 13 at iter_simd.rs:81:54: 81:55
+        _60 = ptr::mut_ptr::<impl *mut u32>::cast::<[u32; 4]>(move _61) -> bb30; // scope 13 at iter_simd.rs:81:39: 81:62
+                                         // mir::Constant
+                                         // + span: iter_simd.rs:81:56: 81:60
+                                         // + literal: Const { ty: fn(*mut u32) -> *mut [u32; 4] {std::ptr::mut_ptr::<impl *mut u32>::cast::<[u32; 4]>}, val: Value(Scalar(<ZST>)) }
+    }
+
+    bb30: {
+        StorageDead(_61);                // scope 13 at iter_simd.rs:81:61: 81:62
+        StorageLive(_63);                // scope 13 at iter_simd.rs:81:64: 81:67
+        _63 = _49;                       // scope 13 at iter_simd.rs:81:64: 81:67
+        _59 = write_unaligned::<[u32; 4]>(move _60, move _63) -> bb31; // scope 13 at iter_simd.rs:81:13: 81:68
+                                         // mir::Constant
+                                         // + span: iter_simd.rs:81:13: 81:38
+                                         // + literal: Const { ty: unsafe fn(*mut [u32; 4], [u32; 4]) {std::ptr::write_unaligned::<[u32; 4]>}, val: Value(Scalar(<ZST>)) }
+    }
+
+    bb31: {
+        StorageDead(_63);                // scope 13 at iter_simd.rs:81:67: 81:68
+        StorageDead(_60);                // scope 13 at iter_simd.rs:81:67: 81:68
+        StorageDead(_59);                // scope 13 at iter_simd.rs:81:68: 81:69
+        StorageDead(_49);                // scope 9 at iter_simd.rs:83:5: 83:6
+        StorageDead(_38);                // scope 7 at iter_simd.rs:83:5: 83:6
+        StorageDead(_25);                // scope 5 at iter_simd.rs:83:5: 83:6
+        StorageDead(_18);                // scope 4 at iter_simd.rs:83:5: 83:6
+        StorageDead(_7);                 // scope 3 at iter_simd.rs:83:5: 83:6
+        StorageDead(_6);                 // scope 2 at iter_simd.rs:83:5: 83:6
+        goto -> bb1;                     // scope 2 at iter_simd.rs:28:5: 83:6
+    }
+}
