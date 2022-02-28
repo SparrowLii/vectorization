@@ -859,7 +859,8 @@ pub(super) fn filtered_terminator_span(terminator: &Terminator<'_>) -> Option<Sp
         | TerminatorKind::SwitchInt { .. }
         // For `FalseEdge`, only the `real` branch is taken, so it is similar to a `Goto`.
         | TerminatorKind::FalseEdge { .. }
-        | TerminatorKind::Goto { .. } => None,
+        | TerminatorKind::Goto { .. }
+        | TerminatorKind::VectorFunc { .. }=> None,
 
         // Call `func` operand can have a more specific span when part of a chain of calls
         | TerminatorKind::Call { ref func, .. } => {

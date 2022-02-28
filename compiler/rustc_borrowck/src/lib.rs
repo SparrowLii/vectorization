@@ -769,6 +769,18 @@ impl<'cx, 'tcx> rustc_mir_dataflow::ResultsVisitor<'cx, 'tcx> for MirBorrowckCtx
                     self.mutate_place(loc, (dest, span), Deep, JustWrite, flow_state);
                 }
             }
+            TerminatorKind::VectorFunc {
+                func: _,
+                ref args,
+                ref destination,
+            } => {
+                for arg in args {
+                    self.consume_operand(loc, (arg, span), flow_state);
+                }
+                if let Some((dest, _ /*bb*/)) = *destination {
+                    self.mutate_place(loc, (dest, span), Deep, JustWrite, flow_state);
+                }
+            }
             TerminatorKind::Assert { ref cond, expected: _, ref msg, target: _, cleanup: _ } => {
                 self.consume_operand(loc, (cond, span), flow_state);
                 use rustc_middle::mir::AssertKind;
@@ -874,6 +886,7 @@ impl<'cx, 'tcx> rustc_mir_dataflow::ResultsVisitor<'cx, 'tcx> for MirBorrowckCtx
             TerminatorKind::Abort
             | TerminatorKind::Assert { .. }
             | TerminatorKind::Call { .. }
+            | TerminatorKind::VectorFunc { .. }
             | TerminatorKind::Drop { .. }
             | TerminatorKind::DropAndReplace { .. }
             | TerminatorKind::FalseEdge { real_target: _, imaginary_target: _ }

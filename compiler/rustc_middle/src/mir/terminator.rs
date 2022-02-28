@@ -9,7 +9,7 @@ use super::{
 };
 pub use rustc_ast::Mutability;
 use rustc_macros::HashStable;
-use rustc_span::Span;
+use rustc_span::{Span, Symbol};
 use std::borrow::Cow;
 use std::fmt::{self, Debug, Formatter, Write};
 use std::iter;
@@ -199,6 +199,12 @@ pub enum TerminatorKind<'tcx> {
         fn_span: Span,
     },
 
+    VectorFunc {
+        func: Symbol,
+        args: Vec<Operand<'tcx>>,
+        destination: Option<(Place<'tcx>, BasicBlock)>,
+    },
+
     /// Jump to the target if the condition has the expected value,
     /// otherwise panic with a message and a cleanup target.
     Assert {
@@ -320,10 +326,12 @@ impl<'tcx> TerminatorKind<'tcx> {
             | Return
             | Unreachable
             | Call { destination: None, cleanup: None, .. }
+            | VectorFunc { destination: None, ..}
             | InlineAsm { destination: None, cleanup: None, .. } => None.into_iter().chain(&[]),
             Goto { target: ref t }
             | Call { destination: None, cleanup: Some(ref t), .. }
             | Call { destination: Some((_, ref t)), cleanup: None, .. }
+            | VectorFunc { destination: Some((_, ref t)), ..}
             | Yield { resume: ref t, drop: None, .. }
             | DropAndReplace { target: ref t, unwind: None, .. }
             | Drop { target: ref t, unwind: None, .. }
@@ -358,10 +366,12 @@ impl<'tcx> TerminatorKind<'tcx> {
             | Return
             | Unreachable
             | Call { destination: None, cleanup: None, .. }
+            | VectorFunc { destination: None, .. }
             | InlineAsm { destination: None, cleanup: None, .. } => None.into_iter().chain(&mut []),
             Goto { target: ref mut t }
             | Call { destination: None, cleanup: Some(ref mut t), .. }
             | Call { destination: Some((_, ref mut t)), cleanup: None, .. }
+            | VectorFunc { destination: Some((_, ref mut t)), ..}
             | Yield { resume: ref mut t, drop: None, .. }
             | DropAndReplace { target: ref mut t, unwind: None, .. }
             | Drop { target: ref mut t, unwind: None, .. }
@@ -397,7 +407,8 @@ impl<'tcx> TerminatorKind<'tcx> {
             | TerminatorKind::GeneratorDrop
             | TerminatorKind::Yield { .. }
             | TerminatorKind::SwitchInt { .. }
-            | TerminatorKind::FalseEdge { .. } => None,
+            | TerminatorKind::FalseEdge { .. }
+            | TerminatorKind::VectorFunc { .. } => None,
             TerminatorKind::Call { cleanup: ref unwind, .. }
             | TerminatorKind::Assert { cleanup: ref unwind, .. }
             | TerminatorKind::DropAndReplace { ref unwind, .. }
@@ -417,7 +428,8 @@ impl<'tcx> TerminatorKind<'tcx> {
             | TerminatorKind::GeneratorDrop
             | TerminatorKind::Yield { .. }
             | TerminatorKind::SwitchInt { .. }
-            | TerminatorKind::FalseEdge { .. } => None,
+            | TerminatorKind::FalseEdge { .. }
+            | TerminatorKind::VectorFunc { .. } => None,
             TerminatorKind::Call { cleanup: ref mut unwind, .. }
             | TerminatorKind::Assert { cleanup: ref mut unwind, .. }
             | TerminatorKind::DropAndReplace { ref mut unwind, .. }
@@ -490,6 +502,19 @@ impl<'tcx> TerminatorKind<'tcx> {
                 write!(fmt, "replace({:?} <- {:?})", place, value)
             }
             Call { func, args, destination, .. } => {
+                if let Some((destination, _)) = destination {
+                    write!(fmt, "{:?} = ", destination)?;
+                }
+                write!(fmt, "{:?}(", func)?;
+                for (index, arg) in args.iter().enumerate() {
+                    if index > 0 {
+                        write!(fmt, ", ")?;
+                    }
+                    write!(fmt, "{:?}", arg)?;
+                }
+                write!(fmt, ")")
+            }
+            VectorFunc { func, args, destination} => {
                 if let Some((destination, _)) = destination {
                     write!(fmt, "{:?} = ", destination)?;
                 }
@@ -589,6 +614,8 @@ impl<'tcx> TerminatorKind<'tcx> {
             Call { destination: Some(_), cleanup: None, .. } => vec!["return".into()],
             Call { destination: None, cleanup: Some(_), .. } => vec!["unwind".into()],
             Call { destination: None, cleanup: None, .. } => vec![],
+            VectorFunc { destination: Some(_), .. } => vec!["return".into()],
+            VectorFunc { destination: None, .. } => vec![],
             Yield { drop: Some(_), .. } => vec!["resume".into(), "drop".into()],
             Yield { drop: None, .. } => vec!["resume".into()],
             DropAndReplace { unwind: None, .. } | Drop { unwind: None, .. } => {

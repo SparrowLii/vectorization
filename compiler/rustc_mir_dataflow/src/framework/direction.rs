@@ -501,6 +501,19 @@ impl Direction for Forward {
                 }
             }
 
+            VectorFunc { destination, func: _, args: _ } => {
+                if let Some((dest_place, target)) = destination {
+                    // N.B.: This must be done *last*, otherwise the unwind path will see the call
+                    // return effect.
+                    analysis.apply_call_return_effect(
+                        exit_state,
+                        bb,
+                        CallReturnPlaces::Call(dest_place),
+                    );
+                    propagate(target, exit_state);
+                }
+            }
+
             InlineAsm {
                 template: _,
                 ref operands,

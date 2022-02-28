@@ -1,7 +1,7 @@
 use super::BackendTypes;
 use crate::mir::operand::OperandRef;
 use rustc_middle::ty::{self, Ty};
-use rustc_span::Span;
+use rustc_span::{Span, Symbol};
 use rustc_target::abi::call::FnAbi;
 
 pub trait IntrinsicCallMethods<'tcx>: BackendTypes {
@@ -12,6 +12,14 @@ pub trait IntrinsicCallMethods<'tcx>: BackendTypes {
         &mut self,
         instance: ty::Instance<'tcx>,
         fn_abi: &FnAbi<'tcx, Ty<'tcx>>,
+        args: &[OperandRef<'tcx, Self::Value>],
+        llresult: Self::Value,
+        span: Span,
+    );
+
+    fn codegen_vector_func(
+        &mut self,
+        func: Symbol,
         args: &[OperandRef<'tcx, Self::Value>],
         llresult: Self::Value,
         span: Span,

@@ -1045,7 +1045,8 @@ fn can_unwind<'tcx>(tcx: TyCtxt<'tcx>, body: &Body<'tcx>) -> bool {
             | TerminatorKind::GeneratorDrop
             | TerminatorKind::FalseEdge { .. }
             | TerminatorKind::FalseUnwind { .. }
-            | TerminatorKind::InlineAsm { .. } => {}
+            | TerminatorKind::InlineAsm { .. }
+            | TerminatorKind::VectorFunc { .. } => {}
 
             // Resume will *continue* unwinding, but if there's no other unwinding terminator it
             // will never be reached.
@@ -1484,6 +1485,18 @@ impl<'tcx> Visitor<'tcx> for EnsureGeneratorFieldAssignmentsNeverAlias<'_> {
                 });
             }
 
+            TerminatorKind::VectorFunc {
+                func: _,
+                args,
+                destination: Some((dest, _)),
+            } => {
+                self.check_assigned_place(*dest, |this| {
+                    for arg in args {
+                        this.visit_operand(arg, location);
+                    }
+                });
+            }
+
             TerminatorKind::Yield { value, resume: _, resume_arg, drop: _ } => {
                 self.check_assigned_place(*resume_arg, |this| this.visit_operand(value, location));
             }
@@ -1492,6 +1505,7 @@ impl<'tcx> Visitor<'tcx> for EnsureGeneratorFieldAssignmentsNeverAlias<'_> {
             TerminatorKind::InlineAsm { .. } => {}
 
             TerminatorKind::Call { .. }
+            | TerminatorKind::VectorFunc { .. }
             | TerminatorKind::Goto { .. }
             | TerminatorKind::SwitchInt { .. }
             | TerminatorKind::Resume

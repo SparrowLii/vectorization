@@ -127,6 +127,7 @@ impl<'mir, 'tcx> TriColorVisitor<&'mir Body<'tcx>> for Search<'mir, 'tcx> {
             // These do not.
             TerminatorKind::Assert { .. }
             | TerminatorKind::Call { .. }
+            | TerminatorKind::VectorFunc { .. }
             | TerminatorKind::Drop { .. }
             | TerminatorKind::DropAndReplace { .. }
             | TerminatorKind::FalseEdge { .. }

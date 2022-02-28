@@ -11,19 +11,20 @@ use rustc_middle::mir::BinOp;
 use rustc_middle::mir::StatementKind::*;
 use rustc_middle::mir::TerminatorKind::*;
 use rustc_middle::mir::*;
+use rustc_middle::ty;
 use rustc_middle::ty::{Const, TyCtxt};
 use rustc_span::symbol::sym;
-use rustc_span::DUMMY_SP;
+use rustc_span::{Symbol, DUMMY_SP};
 use std::io::{self, Write};
 use ExtraStmt::*;
 use LocalUse::*;
-use Segment::*;
+use VectorStmt::*;
 
 pub struct Vectorize;
 
 #[derive(Default, Debug)]
-pub struct VectorResolver {
-    vector_len: usize,
+pub struct VectorResolver<'tcx> {
+    vector_len: Option<u64>,
     loops: Vec<(Vec<BasicBlock> /* pre_loop */, Vec<BasicBlock> /* loop */)>,
     break_points: FxHashSet<BasicBlock>,
     break_blocks: Vec<BasicBlock>,
@@ -31,10 +32,9 @@ pub struct VectorResolver {
     conditions: FxHashSet<Local>,
     locals_use: IndexVec<Local, LocalUse>,
 
-    loop_stmts: Vec<ExtraStmt>,
+    loop_stmts: Vec<ExtraStmt<'tcx>>,
 
-    segments: Vec<Segment>,
-    temp_to_simd: FxHashMap<Local, Local>,
+    temp_to_vector: FxHashMap<Local, Local>,
 }
 
 #[derive(Debug, Copy, Clone, PartialOrd, Ord, Eq, PartialEq)]
@@ -46,16 +46,17 @@ enum LocalUse {
 }
 
 #[derive(Debug, Clone)]
-enum ExtraStmt {
+enum ExtraStmt<'tcx> {
     CondiStorage(Location, BitSet<Local>),
-    CondiGet(Location, BitSet<Local>),
-    CondiSet(Location, BitSet<Local>),
+    CondiGet(Place<'tcx>, Rvalue<'tcx>, BitSet<Local>),
+    CondiSet(Place<'tcx>, Rvalue<'tcx>, BitSet<Local>),
 
-    PreGet(Location),
-    AfterSet(Location),
+    PreGet(Place<'tcx>, Rvalue<'tcx>),
+    AfterGet(Place<'tcx>, Rvalue<'tcx>),
+    AfterSet(Place<'tcx>, Rvalue<'tcx>, BitSet<Local>),
 
     TempStorage(Location),
-    TempAssign(Location, BitSet<Local>),
+    TempAssign(Place<'tcx>, Rvalue<'tcx>, BitSet<Local>),
 
     BreakTerminator(Location, BitSet<Local>),
     SetCondiTerminator(Location, BitSet<Local>),
@@ -66,13 +67,7 @@ enum ExtraStmt {
     TempFuncTerminator(Location),
 }
 
-#[derive(Debug)]
-enum Segment {
-    Condi(Vec<ExtraStmt>),
-    Vertical(Vec<ExtraStmt>),
-}
-
-impl ExtraStmt {
+impl ExtraStmt<'_> {
     /*fn bitset(&self) -> Option<BitSet<Local>> {
         match self {
             CondiStorage(_, bitset)
@@ -133,7 +128,7 @@ impl<'tcx> MirPass<'tcx> for Vectorize {
             writeln!(file)?;
 
             let mut resolver = VectorResolver::default();
-            resolver.vector_len = if tcx.sess.target.arch == "x86_64" { 16 } else { 4 };
+
             resolver.resolve_loops(body);
             if resolver.loops.len() != 1 {
                 unimplemented!("too many loops");
@@ -164,34 +159,26 @@ impl<'tcx> MirPass<'tcx> for Vectorize {
             }
             writeln!(file)?;
 
-            writeln!(file, "Segments:")?;
-            resolver.resolve_segments();
-            for seg in &resolver.segments {
-                match seg {
-                    Condi(v) => {
-                        writeln!(file, "condi loop:")?;
-                        for ex_stmt in v {
-                            writeln!(file, "{:?}", ex_stmt)?;
-                        }
-                        writeln!(file)?;
-                    }
-                    Vertical(v) => {
-                        writeln!(file, "vectical:")?;
-                        for ex_stmt in v {
-                            writeln!(file, "{:?}", ex_stmt)?;
-                        }
-                        writeln!(file)?;
-                    }
-                }
-            }
-
             resolver.generate_blocks(tcx, body);
         };
         simplify::remove_dead_blocks(tcx, body);
+        simplify::simplify_locals(body, tcx);
     }
 }
 
-impl VectorResolver {
+#[derive(Debug, Clone)]
+enum VectorStmt<'tcx> {
+    StraightStmt(Statement<'tcx>),
+    StraightTerm(Terminator<'tcx>),
+    BinOpAfterSet(Place<'tcx>, BinOp, Operand<'tcx>, Operand<'tcx>),
+    UseAssign(Place<'tcx>, Operand<'tcx>),
+    BinOpAssign(Place<'tcx>, BinOp, Operand<'tcx>, Operand<'tcx>),
+    VectorTerm(Symbol, Vec<Operand<'tcx>>, Place<'tcx>),
+
+    InnerLoopStmt(ExtraStmt<'tcx>),
+}
+
+impl<'tcx> VectorResolver<'tcx> {
     fn resolve_loops(&mut self, body: &Body<'_>) {
         let mut cur_bbs = vec![START_BLOCK];
         let mut successors = vec![body[START_BLOCK].terminator().successors()];
@@ -211,7 +198,13 @@ impl VectorResolver {
         }
     }
 
-    fn resolve_conditions(&mut self, body: &Body<'_>) {
+    fn is_unreachable_block(bb: BasicBlock, body: &Body<'_>) -> bool {
+        let block = &body[bb];
+        block.statements.is_empty()
+            && matches!(block.terminator, Some(Terminator { source_info: _, kind: Unreachable }))
+    }
+
+    fn resolve_conditions<'r>(&'r mut self, body: &Body<'tcx>) {
         let pre_lp = self.loops[0].0.clone();
         let lp = self.loops[0].1.clone();
         for bb in &lp {
@@ -220,7 +213,9 @@ impl VectorResolver {
                     let mut is_condi = false;
                     targets.all_targets().into_iter().for_each(|bb| {
                         if lp.iter().all(|target| target != bb) {
-                            self.break_points.insert(*bb);
+                            if !Self::is_unreachable_block(*bb, body) {
+                                self.break_points.insert(*bb);
+                            }
                             is_condi = true;
                         }
                     });
@@ -234,15 +229,11 @@ impl VectorResolver {
                 _ => continue,
             }
         }
-        pub struct ConditionResolver<'r> {
-            r: &'r mut VectorResolver,
+        pub struct ConditionResolver<'r, 'tcx> {
+            r: &'r mut VectorResolver<'tcx>,
             changed: bool,
         }
-        impl Visitor<'_> for ConditionResolver<'_> {
-            fn visit_local(&mut self, local: &Local, _context: PlaceContext, _location: Location) {
-                self.changed = self.r.conditions.insert(*local);
-            }
-
+        impl Visitor<'_> for ConditionResolver<'_, '_> {
             fn visit_statement(&mut self, statement: &Statement<'_>, location: Location) {
                 if let Assign(assign) = &statement.kind {
                     let (place, rvalue) = assign.as_ref();
@@ -275,6 +266,10 @@ impl VectorResolver {
                     _ => {}
                 }
             }
+
+            fn visit_local(&mut self, local: &Local, _context: PlaceContext, _location: Location) {
+                self.changed = self.r.conditions.insert(*local);
+            }
         }
         let mut con_resolver = ConditionResolver { changed: !self.conditions.is_empty(), r: self };
         while con_resolver.changed {
@@ -285,7 +280,7 @@ impl VectorResolver {
         }
     }
 
-    fn resolve_locals(&mut self, body: &Body<'_>) {
+    fn resolve_locals<'r>(&'r mut self, body: &Body<'tcx>) {
         let pre_lp = FxHashSet::from_iter(self.loops[0].0.clone());
         let lp = FxHashSet::from_iter(self.loops[0].1.clone());
         let after_lp: FxHashSet<BasicBlock> = (0..body.basic_blocks().len())
@@ -294,13 +289,13 @@ impl VectorResolver {
             .collect();
 
         self.locals_use = IndexVec::from_elem(InLoop, &body.local_decls);
-        struct LocalResolver<'r> {
-            r: &'r mut VectorResolver,
+        struct LocalResolver<'r, 'tcx> {
+            r: &'r mut VectorResolver<'tcx>,
             local_use: LocalUse,
         }
 
         (1..1 + body.arg_count).for_each(|u| self.locals_use[Local::new(u)] = PreLoop);
-        impl Visitor<'_> for LocalResolver<'_> {
+        impl<'r, 'tcx> Visitor<'tcx> for LocalResolver<'r, 'tcx> {
             fn visit_local(&mut self, local: &Local, _context: PlaceContext, _location: Location) {
                 self.r.locals_use[*local] = self.local_use;
             }
@@ -322,15 +317,15 @@ impl VectorResolver {
         }
     }
 
-    fn resolve_stmts(&mut self, body: &Body<'_>) {
-        pub struct StmtResoler<'r> {
-            r: &'r mut VectorResolver,
+    fn resolve_stmts<'r>(&'r mut self, body: &Body<'tcx>) {
+        pub struct StmtResoler<'r, 'tcx> {
+            r: &'r mut VectorResolver<'tcx>,
             current_use: LocalUse,
             locals: BitSet<Local>,
         }
 
-        impl Visitor<'_> for StmtResoler<'_> {
-            fn visit_statement(&mut self, statement: &Statement<'_>, location: Location) {
+        impl<'tcx> Visitor<'tcx> for StmtResoler<'_, 'tcx> {
+            fn visit_statement(&mut self, statement: &Statement<'tcx>, location: Location) {
                 self.locals.clear();
                 match &statement.kind {
                     StorageLive(local) | StorageDead(local) => {
@@ -340,7 +335,7 @@ impl VectorResolver {
                                 self.r.loop_stmts.push(CondiStorage(location, self.locals.clone()))
                             }
                             InLoop => self.r.loop_stmts.push(TempStorage(location)),
-                            _ => unimplemented!("storage resolve fail on {:?}", location),
+                            _ => unimplemented!("local {:?} is {:?}", local, self.r.locals_use[*local]),
                         }
                     }
                     Assign(assign) => {
@@ -352,23 +347,47 @@ impl VectorResolver {
                             location,
                         );
                         let left_use = self.current_use;
+                        let mut left_locals = self.locals.clone();
+                        self.locals.clear();
 
                         self.current_use = InLoop;
                         self.visit_rvalue(rvalue, location);
                         let right_use = self.current_use;
+                        let right_locals = self.locals.clone();
 
                         match (left_use, right_use) {
                             (Condition, _) => {
-                                self.r.loop_stmts.push(CondiSet(location, self.locals.clone()))
+                                left_locals.union(&right_locals);
+                                self.r.loop_stmts.push(CondiSet(
+                                    *place,
+                                    rvalue.clone(),
+                                    left_locals,
+                                ))
                             }
                             (InLoop, Condition) => {
-                                self.r.loop_stmts.push(CondiGet(location, self.locals.clone()))
+                                left_locals.union(&right_locals);
+                                self.r.loop_stmts.push(CondiGet(
+                                    *place,
+                                    rvalue.clone(),
+                                    left_locals,
+                                ))
                             }
-                            (InLoop, InLoop) => {
-                                self.r.loop_stmts.push(TempAssign(location, self.locals.clone()))
+                            (InLoop, InLoop) => self.r.loop_stmts.push(TempAssign(
+                                *place,
+                                rvalue.clone(),
+                                right_locals,
+                            )),
+                            (InLoop, PreLoop) => {
+                                self.r.loop_stmts.push(PreGet(*place, rvalue.clone()))
                             }
-                            (InLoop, PreLoop) => self.r.loop_stmts.push(PreGet(location)),
-                            (AfterLoop, _) => self.r.loop_stmts.push(AfterSet(location)),
+                            (InLoop, AfterLoop) => {
+                                self.r.loop_stmts.push(AfterGet(*place, rvalue.clone()))
+                            }
+                            (AfterLoop, _) => self.r.loop_stmts.push(AfterSet(
+                                *place,
+                                rvalue.clone(),
+                                right_locals,
+                            )),
                             _ => unimplemented!("assign resolve fail on {:?}", location),
                         }
                     }
@@ -376,14 +395,7 @@ impl VectorResolver {
                 }
             }
 
-            fn visit_local(&mut self, local: &Local, _context: PlaceContext, _location: Location) {
-                self.locals.insert(*local);
-                if self.current_use < self.r.locals_use[*local] {
-                    self.current_use = self.r.locals_use[*local];
-                }
-            }
-
-            fn visit_terminator(&mut self, terminator: &Terminator<'_>, location: Location) {
+            fn visit_terminator(&mut self, terminator: &Terminator<'tcx>, location: Location) {
                 self.locals.clear();
                 match &terminator.kind {
                     SwitchInt { discr, switch_ty: _, targets: _ } => {
@@ -438,6 +450,13 @@ impl VectorResolver {
                     }
                 }
             }
+
+            fn visit_local(&mut self, local: &Local, _context: PlaceContext, _location: Location) {
+                self.locals.insert(*local);
+                if self.current_use < self.r.locals_use[*local] {
+                    self.current_use = self.r.locals_use[*local];
+                }
+            }
         }
         let mut stmt_resolver = StmtResoler {
             r: self,
@@ -449,7 +468,7 @@ impl VectorResolver {
         }
     }
 
-    fn resort_stmts(&mut self) {
+    fn resort_stmts<'r>(&'r mut self) {
         for i in 0..self.loop_stmts.len() {
             for j in (1..i + 1).rev() {
                 if self.loop_stmts[j].move_up(&self.loop_stmts[j - 1]) {
@@ -461,7 +480,7 @@ impl VectorResolver {
         }
     }
 
-    fn resolve_segments(&mut self) {
+    fn resolve_segments<'r>(&'r mut self) -> (Vec<ExtraStmt<'tcx>>, Vec<ExtraStmt<'tcx>>) {
         let mut index = 0;
         for i in (0..self.loop_stmts.len()).rev() {
             if self.loop_stmts[i].is_condi() {
@@ -470,191 +489,774 @@ impl VectorResolver {
             }
         }
         let (inner, vect) = self.loop_stmts.split_at(index);
-        self.segments.push(Condi(inner.to_vec()));
-        self.segments.push(Vertical(vect.to_vec()));
+        (inner.to_vec(), vect.to_vec())
     }
 
-    fn generate_blocks<'tcx>(&mut self, tcx: TyCtxt<'tcx>, body: &mut Body<'tcx>) {
-        let outer_loop = body.basic_blocks_mut().push(BasicBlockData::new(None));
-        let pre_loop = *self.loops[0].0.last().unwrap();
-        let start_loop = self.loops[0].1[0];
-        let break_point = *self.break_points.iter().next().unwrap();
-        let inner = body.local_decls.push(LocalDecl::new(tcx.types.usize, DUMMY_SP));
-        let inside = body.local_decls.push(LocalDecl::new(tcx.types.usize, DUMMY_SP));
-        let mut cur_inner_loop = None;
-
-        let mut block;
-
-        let mut to_inner_break = Vec::<BasicBlock>::new();
-        let mut to_remain_init = Vec::<BasicBlock>::new();
-
-        let source_info = SourceInfo { span: DUMMY_SP, scope: OUTERMOST_SOURCE_SCOPE };
-        /*body[pre_loop].statements.push(Statement {
-            source_info, kind: StorageLive(inner),
-        });
-        body[break_point].statements.push(Statement {
-            source_info,
-            kind: StorageDead(inner),
-        });*/
-        for seg in &self.segments {
-            match seg {
-                Condi(extra_stmts) => {
-                    let term = body[pre_loop].terminator_mut();
-                    if let Goto { target } = term.kind {
-                        assert_eq!(target, start_loop);
-                        term.kind = Goto { target: outer_loop };
-                    } else {
-                        bug!("wrong pre loop");
-                    }
-                    body[outer_loop].statements.push(Statement {
-                        source_info,
-                        kind: Assign(Box::new((
-                            Place::from(inner),
-                            Rvalue::Use(Operand::Constant(Box::new(Constant {
-                                span: DUMMY_SP,
-                                user_ty: None,
-                                literal: Const::from_usize(tcx, 0).into(),
-                            }))),
-                        ))),
-                    });
-                    let inner_loop = body.basic_blocks_mut().push(BasicBlockData::new(None));
-                    body[outer_loop].terminator =
-                        Some(Terminator { source_info, kind: Goto { target: inner_loop } });
-
-                    let temp1 = body.local_decls.push(LocalDecl::new(tcx.types.usize, DUMMY_SP));
-                    body[inner_loop].statements.push(Statement {
-                        source_info,
-                        kind: Assign(Box::new((
-                            Place::from(temp1),
-                            Rvalue::Use(Operand::Copy(Place::from(inner))),
-                        ))),
-                    });
-                    let temp2 = body.local_decls.push(LocalDecl::new(tcx.types.bool, DUMMY_SP));
-                    body[inner_loop].statements.push(Statement {
-                        source_info,
-                        kind: Assign(Box::new((
-                            Place::from(temp2),
-                            Rvalue::BinaryOp(
-                                BinOp::Ge,
-                                Box::new((
-                                    Operand::Move(Place::from(temp1)),
-                                    Operand::Constant(Box::new(Constant {
-                                        span: DUMMY_SP,
-                                        user_ty: None,
-                                        literal: Const::from_usize(tcx, self.vector_len as u64)
-                                            .into(),
-                                    })),
-                                )),
-                            ),
-                        ))),
-                    });
-                    block = body.basic_blocks_mut().push(BasicBlockData::new(None));
-                    body[inner_loop].terminator = Some(Terminator {
-                        source_info,
-                        kind: SwitchInt {
-                            discr: Operand::Move(Place::from(temp2)),
-                            switch_ty: tcx.types.bool,
-                            targets: SwitchTargets::static_if(0, block, START_BLOCK),
-                        },
-                    });
-                    to_inner_break.push(inner_loop);
-
-                    for stmt in extra_stmts {
-                        match stmt {
-                            CondiStorage(location, _) | CondiSet(location, _) => {
-                                let st = body[location.block].statements[location.statement_index]
-                                    .clone();
-                                body[block].statements.push(st)
-                            }
-                            BreakTerminator(location, _) => {
-                                let term = body[location.block].terminator();
-                                if let SwitchInt { discr, switch_ty, targets } = term.kind.clone() {
-                                    let t = targets.all_targets();
-                                    if switch_ty != tcx.types.bool
-                                        || t.len() != 2
-                                        || t[1] != break_point
-                                    {
-                                        unimplemented!("unimplemented break terminator:{:?}", term)
-                                    }
-                                    let next =
-                                        body.basic_blocks_mut().push(BasicBlockData::new(None));
-                                    body[block].terminator = Some(Terminator {
-                                        source_info,
-                                        kind: SwitchInt {
-                                            discr: discr.clone(),
-                                            switch_ty,
-                                            targets: SwitchTargets::static_if(0, next, START_BLOCK),
-                                        },
-                                    });
-                                    to_remain_init.push(block);
-                                    block = next;
-                                } else {
-                                    unimplemented!("resolve break terminator failed: {:?}", stmt)
-                                }
-                            }
-                            CondiGet(location, _) => {
-                                if let Assign(assign) = body[location.block].statements
-                                    [location.statement_index]
-                                    .kind
-                                    .clone()
-                                {
-                                    let (place, rvalue) = assign.as_ref();
-                                    if let Some(local) = place.as_local() {
-                                        if body.local_decls[local].ty == tcx.types.usize {
-                                            let temp_simd = if let Some(temp_simd) =
-                                                self.temp_to_simd.get(&local)
-                                            {
-                                                *temp_simd
-                                            } else {
-                                                let temp_simd =
-                                                    body.local_decls.push(LocalDecl::new(
-                                                        tcx.mk_array(
-                                                            tcx.types.usize,
-                                                            self.vector_len as u64,
-                                                        ),
-                                                        DUMMY_SP,
-                                                    ));
-                                                self.temp_to_simd.insert(local, temp_simd);
-                                                body.vector.push(temp_simd);
-                                                temp_simd
-                                            };
-                                            let des = Place {
-                                                local: temp_simd,
-                                                projection: tcx
-                                                    .intern_place_elems(&[PlaceElem::Index(inner)]),
-                                            };
-                                            body[block].statements.push(Statement {
-                                                source_info,
-                                                kind: Assign(Box::new((des, rvalue.clone()))),
-                                            })
-                                        } else {
-                                            unimplemented!(
-                                                "unimplemented condi type: {:?}",
-                                                body.local_decls[local].ty
-                                            )
-                                        }
-                                    } else {
-                                        unimplemented!("cannot put condi to a non-local")
-                                    }
-                                } else {
-                                    bug!("wrong condi getting stmt: {:?}", stmt)
-                                }
-                            }
-                            _ => unimplemented!("resolve condi stmt failed: {:?}", stmt),
+    fn resolve_vector_len<'r>(&'r mut self, body: &Body<'tcx>, tcx: TyCtxt<'tcx>, vect_stmts: &Vec<ExtraStmt<'tcx>>) {
+        let mut vector_type = None;
+        for stmt in vect_stmts {
+            match stmt {
+                AfterSet(_place, rvalue, _) | TempAssign(_place, rvalue, _) => match rvalue {
+                    Rvalue::BinaryOp(_, ops) => {
+                        let (op1, _op2) = ops.as_ref();
+                        let ty = op1.ty(body, tcx);
+                        if vector_type.is_none() {
+                            vector_type = Some(ty)
+                        } else if vector_type.unwrap() != ty {
+                            unimplemented!(
+                                "different vector type: {:?}, {:?}",
+                                vector_type.unwrap(),
+                                ty
+                            )
                         }
                     }
+                    _ => {}
+                },
+                _ => {}
+            }
+        }
+        if let Some(ty) = vector_type {
+            let total_len = if tcx.sess.target.arch == "x86_64" { 1024 } else { 256 };
+            let elem_len = if ty == tcx.types.f32 {
+                32
+            } else if ty == tcx.types.u8 {
+                8
+            } else {
+                unimplemented!("unimplemented vector element type: {:?}", ty)
+            };
+            self.vector_len = Some(total_len / elem_len);
+        }
+    }
 
-                    let inner_loop_end = body.basic_blocks_mut().push(BasicBlockData::new(None));
-                    body[block].terminator =
-                        Some(Terminator { source_info, kind: Goto { target: inner_loop_end } });
-                    body[inner_loop_end].statements.push(Statement {
+    fn get_vector(&self, temp: &Local) -> Local {
+        *self.temp_to_vector.get(temp).unwrap()
+    }
+
+    fn insert_or_get_vector(
+        &mut self,
+        temp: &Local,
+        tcx: TyCtxt<'tcx>,
+        body: &mut Body<'tcx>,
+    ) -> Local {
+        if let Some(v) = self.temp_to_vector.get(temp) {
+            *v
+        } else {
+            let ty = body.local_decls[*temp].ty;
+            let v = body
+                .local_decls
+                .push(LocalDecl::new(tcx.mk_array(ty, self.vector_len.unwrap()), DUMMY_SP));
+            self.temp_to_vector.insert(*temp, v);
+            if ty.is_primitive() {
+                body.vector.push(v);
+            }
+            v
+        }
+    }
+
+    fn generate_condi_section<'r>(
+        &'r mut self,
+        tcx: TyCtxt<'tcx>,
+        body: &mut Body<'tcx>,
+        outer_loop: BasicBlock,
+        inner: Local,
+        condi_stmts: &Vec<ExtraStmt<'tcx>>,
+        to_inner_break: &mut Vec<BasicBlock>,
+        to_remain_init: &mut Vec<BasicBlock>,
+    ) {
+        let source_info = SourceInfo { span: DUMMY_SP, scope: OUTERMOST_SOURCE_SCOPE };
+        let pre_loop = *self.loops[0].0.last().unwrap();
+        let start_loop = self.loops[0].1[0];
+        let term = body[pre_loop].terminator_mut();
+        if let Goto { target } = term.kind {
+            assert_eq!(target, start_loop);
+            term.kind = Goto { target: outer_loop };
+        } else {
+            bug!("wrong pre loop");
+        }
+        body[outer_loop].statements.push(Statement {
+            source_info,
+            kind: Assign(Box::new((
+                Place::from(inner),
+                Rvalue::Use(Operand::Constant(Box::new(Constant {
+                    span: DUMMY_SP,
+                    user_ty: None,
+                    literal: Const::from_usize(tcx, 0).into(),
+                }))),
+            ))),
+        });
+        let inner_loop = body.basic_blocks_mut().push(BasicBlockData::new(None));
+        body[outer_loop].terminator =
+            Some(Terminator { source_info, kind: Goto { target: inner_loop } });
+
+        let temp1 = body.local_decls.push(LocalDecl::new(tcx.types.usize, DUMMY_SP));
+        body[inner_loop].statements.push(Statement {
+            source_info,
+            kind: Assign(Box::new((
+                Place::from(temp1),
+                Rvalue::Use(Operand::Copy(Place::from(inner))),
+            ))),
+        });
+        let temp2 = body.local_decls.push(LocalDecl::new(tcx.types.bool, DUMMY_SP));
+        body[inner_loop].statements.push(Statement {
+            source_info,
+            kind: Assign(Box::new((
+                Place::from(temp2),
+                Rvalue::BinaryOp(
+                    BinOp::Ge,
+                    Box::new((
+                        Operand::Move(Place::from(temp1)),
+                        Operand::Constant(Box::new(Constant {
+                            span: DUMMY_SP,
+                            user_ty: None,
+                            literal: Const::from_usize(tcx, self.vector_len.unwrap()).into(),
+                        })),
+                    )),
+                ),
+            ))),
+        });
+        let mut block = body.basic_blocks_mut().push(BasicBlockData::new(None));
+        body[inner_loop].terminator = Some(Terminator {
+            source_info,
+            kind: SwitchInt {
+                discr: Operand::Move(Place::from(temp2)),
+                switch_ty: tcx.types.bool,
+                targets: SwitchTargets::static_if(0, block, START_BLOCK),
+            },
+        });
+        to_inner_break.push(inner_loop);
+
+        for stmt in condi_stmts {
+            match stmt {
+                CondiStorage(location, _) | SetCondiTerminator(location, _) => {
+                    let st = body[location.block].statements[location.statement_index].clone();
+                    body[block].statements.push(st);
+                }
+                CondiSet(place, rvalue, _) => {
+                    body[block].statements.push(Statement {
+                        source_info,
+                        kind: Assign(Box::new((*place, rvalue.clone()))),
+                    });
+                }
+                BreakTerminator(location, _) => {
+                    let term = body[location.block].terminator();
+                    let pos = self.loops[0]
+                        .1
+                        .iter()
+                        .enumerate()
+                        .find(|(_, lp_bb)| **lp_bb == location.block)
+                        .unwrap()
+                        .0;
+                    if let SwitchInt { discr, switch_ty, targets } = term.kind.clone() {
+                        let next = body.basic_blocks_mut().push(BasicBlockData::new(None));
+                        let mut new_targets = targets.clone();
+                        for bb in new_targets.all_targets_mut() {
+                            assert_ne!(*bb, START_BLOCK);
+                            if self.break_points.get(bb).is_some() {
+                                *bb = START_BLOCK;
+                            } else if Self::is_unreachable_block(*bb, body) {
+                                // nothing to do
+                            } else {
+                                assert_eq!(self.loops[0].1[pos + 1], *bb);
+                                *bb = next;
+                            }
+                        }
+                        body[block].terminator = Some(Terminator {
+                            source_info,
+                            kind: SwitchInt {
+                                discr: discr.clone(),
+                                switch_ty,
+                                targets: new_targets,
+                            },
+                        });
+                        to_remain_init.push(block);
+                        block = next;
+                    } else {
+                        unimplemented!("resolve break terminator failed: {:?}", stmt)
+                    }
+                }
+                CondiGet(place, rvalue, _) => {
+                    // TODO: needs legality check here: If the get type is a
+                    // mutable Ref(..) or RawPtr(..), it must be guaranteed that
+                    // the written value will not be read in the next loop.
+                    // Otherwise, this mir cannot be vectorized.
+                    if let Some(local) = place.as_local() {
+                        let temp_simd = self.insert_or_get_vector(&local, tcx, body);
+                        let des = Place {
+                            local: temp_simd,
+                            projection: tcx.intern_place_elems(&[PlaceElem::Index(inner)]),
+                        };
+                        body[block].statements.push(Statement {
+                            source_info,
+                            kind: Assign(Box::new((des, rvalue.clone()))),
+                        })
+                    } else {
+                        unimplemented!("cannot put condi to a non-local")
+                    }
+                }
+                _ => unimplemented!("resolve condi stmt failed: {:?}", stmt),
+            }
+        }
+
+        body[block].statements.push(Statement {
+            source_info,
+            kind: Assign(Box::new((
+                Place::from(inner),
+                Rvalue::BinaryOp(
+                    BinOp::Add,
+                    Box::new((
+                        Operand::Copy(Place::from(inner)),
+                        Operand::Constant(Box::new(Constant {
+                            span: DUMMY_SP,
+                            user_ty: None,
+                            literal: Const::from_usize(tcx, 1 as u64).into(),
+                        })),
+                    )),
+                ),
+            ))),
+        });
+        body[block].terminator =
+            Some(Terminator { source_info, kind: Goto { target: inner_loop } });
+    }
+
+    fn new_inner_loop<'r>(
+        &'r mut self,
+        tcx: TyCtxt<'tcx>,
+        body: &mut Body<'tcx>,
+        current: BasicBlock,
+        stmts: Vec<ExtraStmt<'tcx>>,
+        inner: Local,
+    ) -> BasicBlock {
+        let source_info = SourceInfo { span: DUMMY_SP, scope: OUTERMOST_SOURCE_SCOPE };
+        body[current].statements.push(Statement {
+            source_info,
+            kind: Assign(Box::new((
+                Place::from(inner),
+                Rvalue::Use(Operand::Constant(Box::new(Constant {
+                    span: DUMMY_SP,
+                    user_ty: None,
+                    literal: Const::from_usize(tcx, 0).into(),
+                }))),
+            ))),
+        });
+        let loop_start = body.basic_blocks_mut().push(BasicBlockData::new(None));
+        body[current].terminator =
+            Some(Terminator { source_info, kind: Goto { target: loop_start } });
+        let temp1 = body.local_decls.push(LocalDecl::new(tcx.types.usize, DUMMY_SP));
+        body[loop_start].statements.push(Statement {
+            source_info,
+            kind: Assign(Box::new((
+                Place::from(temp1),
+                Rvalue::Use(Operand::Copy(Place::from(inner))),
+            ))),
+        });
+        let temp2 = body.local_decls.push(LocalDecl::new(tcx.types.bool, DUMMY_SP));
+        body[loop_start].statements.push(Statement {
+            source_info,
+            kind: Assign(Box::new((
+                Place::from(temp2),
+                Rvalue::BinaryOp(
+                    BinOp::Ge,
+                    Box::new((
+                        Operand::Move(Place::from(temp1)),
+                        Operand::Constant(Box::new(Constant {
+                            span: DUMMY_SP,
+                            user_ty: None,
+                            literal: Const::from_usize(tcx, self.vector_len.unwrap()).into(),
+                        })),
+                    )),
+                ),
+            ))),
+        });
+        let mut loop_next = body.basic_blocks_mut().push(BasicBlockData::new(None));
+        for stmt in stmts {
+            match stmt {
+                TempAssign(place, rvalue, bitset) => {
+                    bitset.iter().for_each(|local| {
+                        let simd_rhs = self.get_vector(&local);
+                        body[loop_next].statements.push(Statement {
+                            source_info,
+                            kind: Assign(Box::new((
+                                Place::from(local),
+                                Rvalue::Use(Operand::Copy(Place {
+                                    local: simd_rhs,
+                                    projection: tcx.intern_place_elems(&[PlaceElem::Index(inner)]),
+                                })),
+                            ))),
+                        })
+                    });
+                    let local = place.as_local().unwrap();
+                    let simd_lhs = self.insert_or_get_vector(&local, tcx, body);
+                    let des = Place {
+                        local: simd_lhs,
+                        projection: tcx.intern_place_elems(&[PlaceElem::Index(inner)]),
+                    };
+                    body[loop_next].statements.push(Statement {
+                        source_info,
+                        kind: Assign(Box::new((des, rvalue.clone()))),
+                    })
+                }
+                TempFuncTerminator(location) => {
+                    let next = body.basic_blocks_mut().push(BasicBlockData::new(None));
+                    if let Call { func, args, destination, cleanup, from_hir_call, fn_span } =
+                        body[location.block].terminator().kind.clone()
+                    {
+                        args.iter().for_each(|operand| {
+                            let local = operand.place().unwrap().as_local().unwrap();
+                            let simd_rhs = self.get_vector(&local);
+                            body[loop_next].statements.push(Statement {
+                                source_info,
+                                kind: Assign(Box::new((
+                                    Place::from(local),
+                                    Rvalue::Use(Operand::Copy(Place {
+                                        local: simd_rhs,
+                                        projection: tcx
+                                            .intern_place_elems(&[PlaceElem::Index(inner)]),
+                                    })),
+                                ))),
+                            })
+                        });
+                        let place = destination.unwrap().0;
+                        let local = place.as_local().unwrap();
+                        let simd_lhs = self.insert_or_get_vector(&local, tcx, body);
+                        let des = Place {
+                            local: simd_lhs,
+                            projection: tcx.intern_place_elems(&[PlaceElem::Index(inner)]),
+                        };
+                        body[loop_next].terminator = Some(Terminator {
+                            source_info,
+                            kind: Call {
+                                func,
+                                args,
+                                destination: Some((des, next)),
+                                cleanup,
+                                from_hir_call,
+                                fn_span,
+                            },
+                        });
+                        loop_next = next;
+                    } else {
+                        bug!("wrong terminator stmt: {:?}", stmt)
+                    }
+                }
+                AfterSet(place, rvalue, bitset) => {
+                    bitset.iter().for_each(|local| {
+                        if let Some(simd_rhs) = self.temp_to_vector.get(&local) {
+                            body[loop_next].statements.push(Statement {
+                                source_info,
+                                kind: Assign(Box::new((
+                                    Place::from(local),
+                                    Rvalue::Use(Operand::Copy(Place {
+                                        local: *simd_rhs,
+                                        projection: tcx
+                                            .intern_place_elems(&[PlaceElem::Index(inner)]),
+                                    })),
+                                ))),
+                            })
+                        };
+                    });
+                    body[loop_next].statements.push(Statement {
+                        source_info,
+                        kind: Assign(Box::new((place, rvalue.clone()))),
+                    });
+                }
+                _ => unimplemented!("stmt {:?} are not supported in inner loop", stmt),
+            }
+        }
+        body[loop_next].statements.push(Statement {
+            source_info,
+            kind: Assign(Box::new((
+                Place::from(inner),
+                Rvalue::BinaryOp(
+                    BinOp::Add,
+                    Box::new((
+                        Operand::Copy(Place::from(inner)),
+                        Operand::Constant(Box::new(Constant {
+                            span: DUMMY_SP,
+                            user_ty: None,
+                            literal: Const::from_usize(tcx, 1 as u64).into(),
+                        })),
+                    )),
+                ),
+            ))),
+        });
+        body[loop_next].terminator =
+            Some(Terminator { source_info, kind: Goto { target: loop_start } });
+
+        let loop_break = body.basic_blocks_mut().push(BasicBlockData::new(None));
+        body[loop_start].terminator = Some(Terminator {
+            source_info,
+            kind: SwitchInt {
+                discr: Operand::Move(Place::from(temp2)),
+                switch_ty: tcx.types.bool,
+                targets: SwitchTargets::static_if(0, loop_next, loop_break),
+            },
+        });
+        loop_break
+    }
+
+    fn resolve_vector_section<'r>(
+        &'r mut self,
+        tcx: TyCtxt<'tcx>,
+        body: &mut Body<'tcx>,
+        outer_loop: BasicBlock,
+        vect_stmts: Vec<ExtraStmt<'tcx>>,
+    ) -> Vec<VectorStmt<'tcx>> {
+        let source_info = SourceInfo { span: DUMMY_SP, scope: OUTERMOST_SOURCE_SCOPE };
+        let mut resolved_stmts = Vec::new();
+        for stmt in &vect_stmts {
+            match stmt {
+                TempStorage(location) => {
+                    let kind =
+                        body[location.block].statements[location.statement_index].kind.clone();
+                    resolved_stmts.push(StraightStmt(Statement { source_info, kind }));
+                }
+                AfterSet(place, rvalue, _bitset) => {
+                    // TODO: An optimization can be added: if the value being written will not
+                    // be read in the loop, move the writing process out of the loop.
+                    match rvalue {
+                        Rvalue::BinaryOp(binop, ops) => {
+                            let (op1, op2) = ops.as_ref();
+                            resolved_stmts.push(BinOpAfterSet(
+                                *place,
+                                *binop,
+                                op1.clone(),
+                                op2.clone(),
+                            ));
+                        }
+                        _ => {
+                            resolved_stmts.push(InnerLoopStmt(stmt.clone()));
+                        }
+                    }
+                }
+                TempAssign(place, rvalue, _bitset) => match rvalue {
+                    Rvalue::Use(operand) => {
+                        resolved_stmts.push(UseAssign(*place, operand.clone()));
+                    }
+                    Rvalue::BinaryOp(bin_op, ops) => {
+                        let (op1, op2) = ops.as_ref();
+                        resolved_stmts.push(BinOpAssign(*place, *bin_op, op1.clone(), op2.clone()));
+                    }
+                    _ => {
+                        resolved_stmts.push(InnerLoopStmt(stmt.clone()));
+                    }
+                },
+                TempFuncTerminator(location) => {
+                    if let Call {
+                        func,
+                        args,
+                        destination,
+                        cleanup: _,
+                        from_hir_call: _,
+                        fn_span: _,
+                    } = body[location.block].terminator().kind.clone()
+                    {
+                        let fn_ty = func.constant().unwrap().ty();
+                        let func_str = if let ty::FnDef(def_id, _) = fn_ty.kind() {
+                            tcx.def_path(*def_id).to_string_no_crate_verbose()
+                        } else {
+                            bug!("wrong func call")
+                        };
+                        if func_str.as_str() == "::intrinsics::{extern#1}::sqrtf32"
+                            || func_str.as_str() == "::f32::{impl#0}::sqrt"
+                        {
+                            let func = sym::simd_fsqrt;
+                            let des = destination.unwrap().0;
+                            resolved_stmts.push(VectorTerm(func, args, des));
+                        } else {
+                            resolved_stmts.push(InnerLoopStmt(stmt.clone()));
+                        }
+                    } else {
+                        bug!("wrong terminator stmt: {:?}", stmt)
+                    }
+                }
+                EndLoopTerminator(_location) => {
+                    resolved_stmts.push(StraightTerm(Terminator {
+                        source_info,
+                        kind: Goto { target: outer_loop },
+                    }));
+                }
+                _ => unimplemented!("resolve vertical stmt failed: {:?}", stmt),
+            }
+        }
+        resolved_stmts
+    }
+
+    fn generate_vector_section<'r>(
+        &'r mut self,
+        tcx: TyCtxt<'tcx>,
+        body: &mut Body<'tcx>,
+        mut current: BasicBlock,
+        vect_stmts: &Vec<ExtraStmt<'tcx>>,
+        inner: Local,
+        outer_loop: BasicBlock,
+    ) -> BasicBlock {
+        let source_info = SourceInfo { span: DUMMY_SP, scope: OUTERMOST_SOURCE_SCOPE };
+        let resolved_stmts =
+            self.resolve_vector_section(tcx, body, outer_loop, vect_stmts.clone());
+        let mut inner_stmts = Vec::new();
+        for stmt in resolved_stmts.into_iter() {
+            if let InnerLoopStmt(stmt) = stmt {
+                inner_stmts.push(stmt);
+            } else {
+                if !inner_stmts.is_empty() {
+                    current = self.new_inner_loop(tcx, body, current, inner_stmts.clone(), inner);
+                    inner_stmts.clear();
+                }
+                match stmt {
+                    StraightStmt(stmt) => {
+                        body[current].statements.push(stmt);
+                    }
+                    BinOpAfterSet(place, bin_op, op1, op2) => {
+                        // TODO: An optimization can be added: if the value being written will not
+                        // be read in the loop, move the writing process out of the loop.
+                        match (op1.place(), op2.place()) {
+                            (Some(p1), Some(p2)) => {
+                                let (l1, l2) = (p1.as_local().unwrap(), p2.as_local().unwrap());
+                                match (self.locals_use.get(l1), self.locals_use.get(l2)) {
+                                    (Some(AfterLoop), Some(InLoop)) => {
+                                        let func = match bin_op {
+                                            BinOp::Add => sym::simd_reduce_add_unordered,
+                                            _ => unimplemented!("unimplemented after set bin op: {:?}", bin_op),
+                                        };
+                                        let next =
+                                            body.basic_blocks_mut().push(BasicBlockData::new(None));
+                                        let args =
+                                            vec![Operand::Move(Place::from(self.get_vector(&l2)))];
+                                        body[current].terminator = Some(Terminator {
+                                            source_info,
+                                            kind: VectorFunc {
+                                                func,
+                                                args,
+                                                destination: Some((p2, next)),
+                                            },
+                                        });
+                                        body[next].statements.push(Statement {
+                                            source_info,
+                                            kind: Assign(Box::new((
+                                                place,
+                                                Rvalue::BinaryOp(bin_op, Box::new((op1, op2))),
+                                            ))),
+                                        });
+                                        current = next;
+                                    }
+                                    _ => unimplemented!("set after ops local use: {:?} with {:?}", l1, l2),
+                                }
+                            }
+                            _ => unimplemented!("set after ops: {:?} with {:?}", op1, op2),
+                        }
+                    }
+                    UseAssign(place, operand) => {
+                        let simd_rhs =
+                            self.get_vector(&operand.place().unwrap().as_local().unwrap());
+                        let local = place.as_local().unwrap();
+                        let simd_lhs = self.insert_or_get_vector(&local, tcx, body);
+                        body[current].statements.push(Statement {
+                            source_info,
+                            kind: Assign(Box::new((
+                                Place::from(simd_lhs),
+                                Rvalue::Use(Operand::Copy(Place::from(simd_rhs))),
+                            ))),
+                        })
+                    }
+                    BinOpAssign(place, bin_op, op1, op2) => {
+                        let func = match bin_op {
+                            BinOp::Add => sym::simd_add,
+                            BinOp::Shr => sym::simd_shr,
+                            BinOp::BitAnd => sym::simd_and,
+                            _ => unimplemented!("unimplemented binop: {:?}", bin_op),
+                        };
+
+                        let (simd_rhs1, simd_rhs2) = (
+                            self.get_vector(&op1.place().unwrap().as_local().unwrap()),
+                            self.get_vector(&op2.place().unwrap().as_local().unwrap()),
+                        );
+                        let args = vec![
+                            Operand::Move(Place::from(simd_rhs1)),
+                            Operand::Move(Place::from(simd_rhs2)),
+                        ];
+
+                        let des = place.as_local().unwrap();
+                        let simd_des = self.insert_or_get_vector(&des, tcx, body);
+
+                        let next = body.basic_blocks_mut().push(BasicBlockData::new(None));
+                        body[current].terminator = Some(Terminator {
+                            source_info,
+                            kind: VectorFunc {
+                                func,
+                                args,
+                                destination: Some((Place::from(simd_des), next)),
+                            },
+                        });
+                        current = next;
+                    }
+                    VectorTerm(func, args, des) => {
+                        let simd_des =
+                            self.insert_or_get_vector(&des.as_local().unwrap(), tcx, body);
+                        let args: Vec<_> = args
+                            .iter()
+                            .map(|arg| {
+                                Operand::Move(Place::from(
+                                    self.get_vector(&arg.place().unwrap().as_local().unwrap()),
+                                ))
+                            })
+                            .collect();
+                        let next = body.basic_blocks_mut().push(BasicBlockData::new(None));
+                        body[current].terminator = Some(Terminator {
+                            source_info,
+                            kind: VectorFunc {
+                                func,
+                                args,
+                                destination: Some((Place::from(simd_des), next)),
+                            },
+                        });
+                        current = next;
+                    }
+                    StraightTerm(term) => {
+                        body[current].terminator = Some(term);
+                    }
+                    InnerLoopStmt(..) => {
+                        unreachable!()
+                    }
+                }
+            }
+        }
+        if !inner_stmts.is_empty() {
+            current = self.new_inner_loop(tcx, body, current, inner_stmts.clone(), inner);
+            inner_stmts.clear();
+        }
+        current
+    }
+
+    fn generate_remain_section<'r>(
+        &'r mut self,
+        tcx: TyCtxt<'tcx>,
+        body: &mut Body<'tcx>,
+        vect_stmts: &Vec<ExtraStmt<'tcx>>,
+        inner: Local,
+        remain_init: BasicBlock,
+    ) {
+        let source_info = SourceInfo { span: DUMMY_SP, scope: OUTERMOST_SOURCE_SCOPE };
+        let break_point = *self.break_points.iter().next().unwrap();
+        let inside = body.local_decls.push(LocalDecl::new(tcx.types.usize, DUMMY_SP));
+        body[remain_init].statements.push(Statement {
+            source_info,
+            kind: Assign(Box::new((
+                Place::from(inside),
+                Rvalue::Use(Operand::Constant(Box::new(Constant {
+                    span: DUMMY_SP,
+                    user_ty: None,
+                    literal: Const::from_usize(tcx, 0).into(),
+                }))),
+            ))),
+        });
+        let remain_start = body.basic_blocks_mut().push(BasicBlockData::new(None));
+        body[remain_init].terminator =
+            Some(Terminator { source_info, kind: Goto { target: remain_start } });
+        let temp1 = body.local_decls.push(LocalDecl::new(tcx.types.usize, DUMMY_SP));
+        body[remain_start].statements.push(Statement {
+            source_info,
+            kind: Assign(Box::new((
+                Place::from(temp1),
+                Rvalue::Use(Operand::Copy(Place::from(inside))),
+            ))),
+        });
+        let temp2 = body.local_decls.push(LocalDecl::new(tcx.types.usize, DUMMY_SP));
+        body[remain_start].statements.push(Statement {
+            source_info,
+            kind: Assign(Box::new((
+                Place::from(temp2),
+                Rvalue::Use(Operand::Copy(Place::from(inner))),
+            ))),
+        });
+        let temp3 = body.local_decls.push(LocalDecl::new(tcx.types.bool, DUMMY_SP));
+        body[remain_start].statements.push(Statement {
+            source_info,
+            kind: Assign(Box::new((
+                Place::from(temp3),
+                Rvalue::BinaryOp(
+                    BinOp::Ge,
+                    Box::new((
+                        Operand::Move(Place::from(temp1)),
+                        Operand::Move(Place::from(temp2)),
+                    )),
+                ),
+            ))),
+        });
+        let remain_next = body.basic_blocks_mut().push(BasicBlockData::new(None));
+        body[remain_start].terminator = Some(Terminator {
+            source_info,
+            kind: SwitchInt {
+                discr: Operand::Move(Place::from(temp3)),
+                switch_ty: tcx.types.bool,
+                targets: SwitchTargets::static_if(0, remain_next, break_point),
+            },
+        });
+        let mut block = remain_next;
+
+        for stmt in vect_stmts {
+            match stmt {
+                TempStorage(location) => {
+                    let kind =
+                        body[location.block].statements[location.statement_index].kind.clone();
+                    body[block].statements.push(Statement { source_info, kind });
+                }
+                AfterSet(place, rvalue, _) => {
+                    body[block].statements.push(Statement {
+                        source_info,
+                        kind: Assign(Box::new((*place, rvalue.clone()))),
+                    });
+                }
+                TempAssign(place, rvalue, bitset) => {
+                    bitset.iter().for_each(|local| {
+                        if let Some(simd) = self.temp_to_vector.get(&local) {
+                            body[block].statements.push(Statement {
+                                source_info,
+                                kind: Assign(Box::new((
+                                    Place::from(local),
+                                    Rvalue::Use(Operand::Copy(Place {
+                                        local: *simd,
+                                        projection: tcx
+                                            .intern_place_elems(&[PlaceElem::Index(inside)]),
+                                    })),
+                                ))),
+                            })
+                        }
+                    });
+                    body[block].statements.push(Statement {
+                        source_info,
+                        kind: Assign(Box::new((*place, rvalue.clone()))),
+                    });
+                }
+                TempFuncTerminator(location) => {
+                    let next = body.basic_blocks_mut().push(BasicBlockData::new(None));
+                    if let Call { func, args, destination, cleanup, from_hir_call, fn_span } =
+                        body[location.block].terminator().kind.clone()
+                    {
+                        body[block].terminator = Some(Terminator {
+                            source_info,
+                            kind: Call {
+                                func,
+                                args,
+                                destination: destination.map(|(place, _)| (place, next)),
+                                cleanup,
+                                from_hir_call,
+                                fn_span,
+                            },
+                        });
+                        block = next;
+                    } else {
+                        bug!("wrong terminator stmt: {:?}", stmt)
+                    }
+                }
+                EndLoopTerminator(_location) => {
+                    body[block].statements.push(Statement {
                         source_info,
                         kind: Assign(Box::new((
-                            Place::from(inner),
+                            Place::from(inside),
                             Rvalue::BinaryOp(
                                 BinOp::Add,
                                 Box::new((
-                                    Operand::Copy(Place::from(inner)),
+                                    Operand::Copy(Place::from(inside)),
                                     Operand::Constant(Box::new(Constant {
                                         span: DUMMY_SP,
                                         user_ty: None,
@@ -664,372 +1266,67 @@ impl VectorResolver {
                             ),
                         ))),
                     });
-                    body[inner_loop_end].terminator =
-                        Some(Terminator { source_info, kind: Goto { target: inner_loop } });
-                    cur_inner_loop = Some(block);
-                }
-                Vertical(extra_stmts) => {
-                    // vector section
-                    let inner_break = body.basic_blocks_mut().push(BasicBlockData::new(None));
-                    for bb in &to_inner_break {
-                        match &mut body[*bb].terminator_mut().kind {
-                            SwitchInt { targets, .. } => {
-                                assert_eq!(targets.otherwise(), START_BLOCK);
-                                *targets.all_targets_mut().last_mut().unwrap() = inner_break;
-                            }
-                            _ => unimplemented!("wrong to inner break block stmt: {:?}", bb),
-                        }
-                    }
-
-                    block = inner_break;
-                    for stmt in extra_stmts {
-                        match stmt {
-                            TempStorage(location) => {
-                                let kind = body[location.block].statements
-                                    [location.statement_index]
-                                    .kind
-                                    .clone();
-                                body[cur_inner_loop.unwrap()].statements.push(Statement { source_info, kind });
-                            }
-                            AfterSet(location) => {
-                                if let Assign(assign) = body[location.block].statements
-                                    [location.statement_index]
-                                    .kind
-                                    .clone()
-                                {
-                                    let (place, rvalue) = assign.as_ref();
-                                    match rvalue {
-                                        Rvalue::BinaryOp(_, bin) => {
-                                            let (_, temp) = bin.as_ref();
-                                            let simd = self
-                                                .temp_to_simd
-                                                .get(&temp.place().unwrap().as_local().unwrap())
-                                                .unwrap();
-                                            body[cur_inner_loop.unwrap()].statements.push(
-                                                Statement {
-                                                    source_info,
-                                                    kind: Assign(Box::new((
-                                                        temp.place().unwrap(),
-                                                        Rvalue::Use(Operand::Copy(Place {
-                                                            local: *simd,
-                                                            projection: tcx.intern_place_elems(&[
-                                                                PlaceElem::Index(inner),
-                                                            ]),
-                                                        })),
-                                                    ))),
-                                                },
-                                            );
-                                            body[cur_inner_loop.unwrap()].statements.push(
-                                                Statement {
-                                                    source_info,
-                                                    kind: Assign(Box::new((
-                                                        place.clone(),
-                                                        rvalue.clone(),
-                                                    ))),
-                                                },
-                                            );
-                                        }
-                                        _ => unimplemented!("set after failed"),
-                                    }
-                                }
-                            }
-                            TempAssign(location, _bitset) => {
-                                if let Assign(assign) = body[location.block].statements
-                                    [location.statement_index]
-                                    .kind
-                                    .clone()
-                                {
-                                    let (place, rvalue) = assign.as_ref();
-                                    match rvalue {
-                                        Rvalue::Cast(_, operand, _)
-                                        | Rvalue::Use(operand) => {
-                                            let simd = self
-                                                .temp_to_simd
-                                                .get(&operand.place().unwrap().as_local().unwrap())
-                                                .unwrap();
-                                            body[cur_inner_loop.unwrap()].statements.push(
-                                                Statement {
-                                                    source_info,
-                                                    kind: Assign(Box::new((
-                                                        operand.place().unwrap(),
-                                                        Rvalue::Use(Operand::Copy(Place {
-                                                            local: *simd,
-                                                            projection: tcx.intern_place_elems(&[
-                                                                PlaceElem::Index(inner),
-                                                            ]),
-                                                        })),
-                                                    ))),
-                                                },
-                                            );
-                                            let ty = place.ty(body, tcx).ty;
-                                            let local = place.as_local().unwrap();
-                                            let temp_simd = if let Some(temp_simd) =
-                                                self.temp_to_simd.get(&local)
-                                            {
-                                                *temp_simd
-                                            } else {
-                                                let temp_simd =
-                                                    body.local_decls.push(LocalDecl::new(
-                                                        tcx.mk_array(ty, self.vector_len as u64),
-                                                        DUMMY_SP,
-                                                    ));
-                                                self.temp_to_simd.insert(local, temp_simd);
-                                                body.vector.push(temp_simd);
-                                                temp_simd
-                                            };
-                                            let des = Place {
-                                                local: temp_simd,
-                                                projection: tcx
-                                                    .intern_place_elems(&[PlaceElem::Index(inner)]),
-                                            };
-                                            body[cur_inner_loop.unwrap()].statements.push(
-                                                Statement {
-                                                    source_info,
-                                                    kind: Assign(Box::new((des, rvalue.clone()))),
-                                                },
-                                            )
-                                        }
-                                        _ => unimplemented!(),
-                                    }
-                                } else {
-                                    bug!("wrong assign stmt")
-                                }
-                            }
-                            TempFuncTerminator(location) => {
-                                let next = body.basic_blocks_mut().push(BasicBlockData::new(None));
-                                if let Call {
-                                    func,
-                                    args,
-                                    destination,
-                                    cleanup: _,
-                                    from_hir_call: _,
-                                    fn_span: _,
-                                } = body[location.block].terminator().kind.clone()
-                                {
-                                    let des = destination.unwrap().0.as_local().unwrap();
-                                    let ty = body.local_decls[des].ty;
-                                    let simd_des =
-                                        if let Some(temp_simd) = self.temp_to_simd.get(&des) {
-                                            *temp_simd
-                                        } else {
-                                            let temp_simd = body.local_decls.push(LocalDecl::new(
-                                                tcx.mk_array(ty, self.vector_len as u64),
-                                                DUMMY_SP,
-                                            ));
-                                            self.temp_to_simd.insert(des, temp_simd);
-                                            body.vector.push(temp_simd);
-                                            temp_simd
-                                        };
-                                    args.iter().for_each(|arg| {
-                                        let temp_simd = self
-                                            .temp_to_simd
-                                            .get(&arg.place().unwrap().as_local().unwrap())
-                                            .unwrap();
-                                        body[cur_inner_loop.unwrap()].statements.push(Statement {
-                                            source_info,
-                                            kind: Assign(Box::new((
-                                                arg.place().unwrap(),
-                                                Rvalue::Use(Operand::Copy(Place {
-                                                    local: *temp_simd,
-                                                    projection: tcx.intern_place_elems(&[
-                                                        PlaceElem::Index(inner),
-                                                    ]),
-                                                })),
-                                            ))),
-                                        });
-                                    });
-                                    let pre_term =
-                                        body[cur_inner_loop.unwrap()].terminator().clone();
-                                    body[cur_inner_loop.unwrap()].terminator = Some(Terminator {
-                                        source_info,
-                                        kind: Call {
-                                            func,
-                                            args,
-                                            destination: Some((
-                                                Place {
-                                                    local: simd_des,
-                                                    projection: tcx.intern_place_elems(&[
-                                                        PlaceElem::Index(inner),
-                                                    ]),
-                                                },
-                                                next,
-                                            )),
-                                            cleanup: None,
-                                            from_hir_call: false,
-                                            fn_span: DUMMY_SP,
-                                        },
-                                    });
-                                    body[next].terminator = Some(pre_term);
-                                    cur_inner_loop = Some(next);
-                                } else {
-                                    bug!("wrong terminator stmt: {:?}", stmt)
-                                }
-                            }
-                            EndLoopTerminator(_location) => {
-                                body[block].terminator = Some(Terminator {
-                                    source_info,
-                                    kind: Goto { target: outer_loop },
-                                });
-                            }
-                            _ => unimplemented!("resolve vertical stmt failed: {:?}", stmt),
-                        }
-                    }
-
-                    // remain section
-                    let remain_init = body.basic_blocks_mut().push(BasicBlockData::new(None));
-                    for bb in &to_remain_init {
-                        match &mut body[*bb].terminator_mut().kind {
-                            SwitchInt { targets, .. } => {
-                                assert_eq!(targets.otherwise(), START_BLOCK);
-                                *targets.all_targets_mut().last_mut().unwrap() = remain_init;
-                            }
-                            _ => unimplemented!("wrong to inner break block stmt: {:?}", bb),
-                        }
-                    }
-                    body[remain_init].statements.push(Statement {
-                        source_info,
-                        kind: Assign(Box::new((
-                            Place::from(inside),
-                            Rvalue::Use(Operand::Constant(Box::new(Constant {
-                                span: DUMMY_SP,
-                                user_ty: None,
-                                literal: Const::from_usize(tcx, 0).into(),
-                            }))),
-                        ))),
-                    });
-                    let remain_start = body.basic_blocks_mut().push(BasicBlockData::new(None));
-                    body[remain_init].terminator =
+                    body[block].terminator =
                         Some(Terminator { source_info, kind: Goto { target: remain_start } });
-                    let temp1 = body.local_decls.push(LocalDecl::new(tcx.types.usize, DUMMY_SP));
-                    body[remain_start].statements.push(Statement {
-                        source_info,
-                        kind: Assign(Box::new((
-                            Place::from(temp1),
-                            Rvalue::Use(Operand::Copy(Place::from(inside))),
-                        ))),
-                    });
-                    let temp2 = body.local_decls.push(LocalDecl::new(tcx.types.usize, DUMMY_SP));
-                    body[remain_start].statements.push(Statement {
-                        source_info,
-                        kind: Assign(Box::new((
-                            Place::from(temp2),
-                            Rvalue::Use(Operand::Copy(Place::from(inner))),
-                        ))),
-                    });
-                    let temp3 = body.local_decls.push(LocalDecl::new(tcx.types.bool, DUMMY_SP));
-                    body[remain_start].statements.push(Statement {
-                        source_info,
-                        kind: Assign(Box::new((
-                            Place::from(temp3),
-                            Rvalue::BinaryOp(
-                                BinOp::Ge,
-                                Box::new((
-                                    Operand::Move(Place::from(temp1)),
-                                    Operand::Move(Place::from(temp2)),
-                                )),
-                            ),
-                        ))),
-                    });
-                    let remain_next = body.basic_blocks_mut().push(BasicBlockData::new(None));
-                    body[remain_start].terminator = Some(Terminator {
-                        source_info,
-                        kind: SwitchInt {
-                            discr: Operand::Move(Place::from(temp3)),
-                            switch_ty: tcx.types.bool,
-                            targets: SwitchTargets::static_if(0, remain_next, break_point),
-                        },
-                    });
-                    block = remain_next;
-
-                    for stmt in extra_stmts {
-                        match stmt {
-                            TempStorage(location) | AfterSet(location) => {
-                                let kind = body[location.block].statements
-                                    [location.statement_index]
-                                    .kind
-                                    .clone();
-                                body[block].statements.push(Statement { source_info, kind });
-                            }
-                            TempAssign(location, bitset) => {
-                                bitset.iter().for_each(|local| {
-                                    if let Some(simd) = self.temp_to_simd.get(&local) {
-                                        body[block].statements.push(Statement {
-                                            source_info,
-                                            kind: Assign(Box::new((
-                                                Place::from(local),
-                                                Rvalue::Use(Operand::Copy(Place {
-                                                    local: *simd,
-                                                    projection: tcx.intern_place_elems(&[
-                                                        PlaceElem::Index(inside),
-                                                    ]),
-                                                })),
-                                            ))),
-                                        })
-                                    }
-                                });
-                                let kind = body[location.block].statements
-                                    [location.statement_index]
-                                    .kind
-                                    .clone();
-                                body[block].statements.push(Statement { source_info, kind: kind });
-                            }
-                            TempFuncTerminator(location) => {
-                                let next = body.basic_blocks_mut().push(BasicBlockData::new(None));
-                                if let Call {
-                                    func,
-                                    args,
-                                    destination,
-                                    cleanup,
-                                    from_hir_call,
-                                    fn_span,
-                                } = body[location.block].terminator().kind.clone()
-                                {
-                                    body[block].terminator = Some(Terminator {
-                                        source_info,
-                                        kind: Call {
-                                            func,
-                                            args,
-                                            destination: destination
-                                                .map(|(place, _)| (place, next)),
-                                            cleanup,
-                                            from_hir_call,
-                                            fn_span,
-                                        },
-                                    });
-                                    block = next;
-                                } else {
-                                    bug!("wrong terminator stmt: {:?}", stmt)
-                                }
-                            }
-                            EndLoopTerminator(_location) => {
-                                body[block].statements.push(Statement {
-                                    source_info,
-                                    kind: Assign(Box::new((
-                                        Place::from(inside),
-                                        Rvalue::BinaryOp(
-                                            BinOp::Add,
-                                            Box::new((
-                                                Operand::Copy(Place::from(inside)),
-                                                Operand::Constant(Box::new(Constant {
-                                                    span: DUMMY_SP,
-                                                    user_ty: None,
-                                                    literal: Const::from_usize(tcx, 1 as u64)
-                                                        .into(),
-                                                })),
-                                            )),
-                                        ),
-                                    ))),
-                                });
-                                body[block].terminator = Some(Terminator {
-                                    source_info,
-                                    kind: Goto { target: remain_start },
-                                });
-                            }
-                            _ => unimplemented!("resolve vertical stmt failed: {:?}", stmt),
-                        }
-                    }
                 }
+                _ => unimplemented!("resolve vertical stmt failed: {:?}", stmt),
             }
         }
+    }
+
+    fn generate_blocks<'r>(&'r mut self, tcx: TyCtxt<'tcx>, body: &mut Body<'tcx>) {
+        let (condi_stmts, vect_stmts) = self.resolve_segments();
+        self.resolve_vector_len(body, tcx, &vect_stmts);
+
+        let inner = body.local_decls.push(LocalDecl::new(tcx.types.usize, DUMMY_SP));
+
+        let outer_loop = body.basic_blocks_mut().push(BasicBlockData::new(None));
+
+        let mut to_inner_break = Vec::<BasicBlock>::new();
+        let mut to_remain_init = Vec::<BasicBlock>::new();
+
+        // TODO: Add Storage statement for newly generated locals
+
+        // TODO: Keep source_info as much as possible
+
+        self.generate_condi_section(
+            tcx,
+            body,
+            outer_loop,
+            inner,
+            &condi_stmts,
+            &mut to_inner_break,
+            &mut to_remain_init,
+        );
+
+        // vector section
+        let inner_break = body.basic_blocks_mut().push(BasicBlockData::new(None));
+        for bb in &to_inner_break {
+            match &mut body[*bb].terminator_mut().kind {
+                SwitchInt { targets, .. } => {
+                    assert_eq!(targets.otherwise(), START_BLOCK);
+                    *targets.all_targets_mut().last_mut().unwrap() = inner_break;
+                }
+                _ => unimplemented!("wrong to inner break block stmt: {:?}", bb),
+            }
+        }
+
+        self.generate_vector_section(tcx, body, inner_break, &vect_stmts, inner, outer_loop);
+
+        // remain section
+        let remain_init = body.basic_blocks_mut().push(BasicBlockData::new(None));
+        for bb in &to_remain_init {
+            match &mut body[*bb].terminator_mut().kind {
+                SwitchInt { targets, .. } => {
+                    for bb in targets.all_targets_mut() {
+                        if *bb == START_BLOCK {
+                            *bb = remain_init;
+                        }
+                    }
+                }
+                _ => unimplemented!("wrong to inner break block stmt: {:?}", bb),
+            }
+        }
+        self.generate_remain_section(tcx, body, &vect_stmts, inner, remain_init);
     }
 }

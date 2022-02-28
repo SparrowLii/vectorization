@@ -1597,6 +1597,11 @@ impl<'a, 'tcx> TypeChecker<'a, 'tcx> {
 
                 self.check_call_inputs(body, term, &sig, args, term_location, from_hir_call);
             }
+            TerminatorKind::VectorFunc { func: _, ref args, destination: _} => {
+                for arg in args {
+                    self.check_operand(arg, term_location);
+                }
+            }
             TerminatorKind::Assert { ref cond, ref msg, .. } => {
                 self.check_operand(cond, term_location);
 
@@ -1813,6 +1818,11 @@ impl<'a, 'tcx> TypeChecker<'a, 'tcx> {
                         span_mirbug!(self, block_data, "cleanup on cleanup block")
                     }
                     self.assert_iscleanup(body, block_data, cleanup, true);
+                }
+            }
+            TerminatorKind::VectorFunc { ref destination, .. } => {
+                if let &Some((_, target)) = destination {
+                    self.assert_iscleanup(body, block_data, target, is_cleanup);
                 }
             }
             TerminatorKind::FalseEdge { real_target, imaginary_target } => {
