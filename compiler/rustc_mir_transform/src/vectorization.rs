@@ -6,15 +6,18 @@ use rustc_data_structures::fx::FxHashSet;
 use rustc_data_structures::stable_map::FxHashMap;
 use rustc_index::bit_set::BitSet;
 use rustc_index::vec::{Idx, IndexVec};
-use rustc_middle::mir::visit::{MutatingUseContext, PlaceContext, Visitor};
+use rustc_middle::mir::visit::{MutatingUseContext, PlaceContext, TyContext, Visitor};
 use rustc_middle::mir::BinOp;
 use rustc_middle::mir::StatementKind::*;
 use rustc_middle::mir::TerminatorKind::*;
 use rustc_middle::mir::*;
 use rustc_middle::ty;
-use rustc_middle::ty::{Const, TyCtxt};
+use rustc_middle::ty::subst::SubstsRef;
+use rustc_middle::ty::{
+    CanonicalUserTypeAnnotation, Const, Region, Ty, TyCtxt, UserTypeAnnotationIndex, Variance,
+};
 use rustc_span::symbol::sym;
-use rustc_span::{Symbol, DUMMY_SP};
+use rustc_span::{Span, Symbol, DUMMY_SP};
 use std::io::{self, Write};
 use ExtraStmt::*;
 use LocalUse::*;
@@ -25,7 +28,10 @@ pub struct Vectorize;
 #[derive(Default, Debug)]
 pub struct VectorResolver<'tcx> {
     vector_len: Option<u64>,
-    loops: Vec<(Vec<BasicBlock> /* pre_loop */, Vec<BasicBlock> /* loop */)>,
+    loops: Vec<(
+        Vec<BasicBlock>, /* pre_loop */
+        Vec<BasicBlock>, /* loop */
+    )>,
     break_points: FxHashSet<BasicBlock>,
     break_blocks: Vec<BasicBlock>,
 
@@ -98,7 +104,11 @@ impl ExtraStmt<'_> {
             _ => {}
         };
         if self.is_condi() {
-            if above.is_condi() { false } else { true }
+            if above.is_condi() {
+                false
+            } else {
+                true
+            }
         } else {
             false
         }
@@ -186,7 +196,8 @@ impl<'tcx> VectorResolver<'tcx> {
         while let Some(successor) = successors.last_mut() {
             if let Some(bb) = successor.next() {
                 if let Some(pos) = cur_bbs.iter().find_position(|cur| *cur == bb) {
-                    self.loops.push((cur_bbs[0..pos.0].to_vec(), cur_bbs[pos.0..].to_vec()));
+                    self.loops
+                        .push((cur_bbs[0..pos.0].to_vec(), cur_bbs[pos.0..].to_vec()));
                 } else {
                     cur_bbs.push(*bb);
                     successors.push(body[*bb].terminator().successors());
@@ -201,7 +212,13 @@ impl<'tcx> VectorResolver<'tcx> {
     fn is_unreachable_block(bb: BasicBlock, body: &Body<'_>) -> bool {
         let block = &body[bb];
         block.statements.is_empty()
-            && matches!(block.terminator, Some(Terminator { source_info: _, kind: Unreachable }))
+            && matches!(
+                block.terminator,
+                Some(Terminator {
+                    source_info: _,
+                    kind: Unreachable
+                })
+            )
     }
 
     fn resolve_conditions<'r>(&'r mut self, body: &Body<'tcx>) {
@@ -209,7 +226,11 @@ impl<'tcx> VectorResolver<'tcx> {
         let lp = self.loops[0].1.clone();
         for bb in &lp {
             match &body[*bb].terminator().kind {
-                SwitchInt { discr, switch_ty: _, targets } => {
+                SwitchInt {
+                    discr,
+                    switch_ty: _,
+                    targets,
+                } => {
                     let mut is_condi = false;
                     targets.all_targets().into_iter().for_each(|bb| {
                         if lp.iter().all(|target| target != bb) {
@@ -245,9 +266,12 @@ impl<'tcx> VectorResolver<'tcx> {
 
             fn visit_terminator(&mut self, terminator: &Terminator<'_>, location: Location) {
                 match &terminator.kind {
-                    DropAndReplace { place, value, target: _, unwind: _ }
-                        if self.r.conditions.contains(&place.local) =>
-                    {
+                    DropAndReplace {
+                        place,
+                        value,
+                        target: _,
+                        unwind: _,
+                    } if self.r.conditions.contains(&place.local) => {
                         self.visit_operand(value, location);
                     }
                     Call {
@@ -271,7 +295,10 @@ impl<'tcx> VectorResolver<'tcx> {
                 self.changed = self.r.conditions.insert(*local);
             }
         }
-        let mut con_resolver = ConditionResolver { changed: !self.conditions.is_empty(), r: self };
+        let mut con_resolver = ConditionResolver {
+            changed: !self.conditions.is_empty(),
+            r: self,
+        };
         while con_resolver.changed {
             con_resolver.changed = false;
             for bb in pre_lp.iter().chain(lp.iter()) {
@@ -295,19 +322,34 @@ impl<'tcx> VectorResolver<'tcx> {
         }
 
         (1..1 + body.arg_count).for_each(|u| self.locals_use[Local::new(u)] = PreLoop);
+
         impl<'r, 'tcx> Visitor<'tcx> for LocalResolver<'r, 'tcx> {
+            fn visit_statement(&mut self, statement: &Statement<'tcx>, location: Location) {
+                if let StorageLive(..) | StorageDead(..) = statement.kind {
+                    // skip
+                } else {
+                    self.super_statement(statement, location);
+                }
+            }
+
             fn visit_local(&mut self, local: &Local, _context: PlaceContext, _location: Location) {
                 self.r.locals_use[*local] = self.local_use;
             }
         }
 
-        let mut pre_resolver = LocalResolver { r: self, local_use: PreLoop };
+        let mut pre_resolver = LocalResolver {
+            r: self,
+            local_use: PreLoop,
+        };
         for bb in pre_lp.into_iter() {
             pre_resolver.visit_basic_block_data(bb, &body[bb]);
         }
 
         self.locals_use[Local::new(0)] = AfterLoop;
-        let mut after_resolver = LocalResolver { r: self, local_use: AfterLoop };
+        let mut after_resolver = LocalResolver {
+            r: self,
+            local_use: AfterLoop,
+        };
         for bb in after_lp.into_iter() {
             after_resolver.visit_basic_block_data(bb, &body[bb]);
         }
@@ -331,11 +373,16 @@ impl<'tcx> VectorResolver<'tcx> {
                     StorageLive(local) | StorageDead(local) => {
                         self.locals.insert(*local);
                         match self.r.locals_use[*local] {
-                            Condition => {
-                                self.r.loop_stmts.push(CondiStorage(location, self.locals.clone()))
-                            }
+                            Condition => self
+                                .r
+                                .loop_stmts
+                                .push(CondiStorage(location, self.locals.clone())),
                             InLoop => self.r.loop_stmts.push(TempStorage(location)),
-                            _ => unimplemented!("local {:?} is {:?}", local, self.r.locals_use[*local]),
+                            _ => unimplemented!(
+                                "local {:?} is {:?}",
+                                local,
+                                self.r.locals_use[*local]
+                            ),
                         }
                     }
                     Assign(assign) => {
@@ -398,10 +445,16 @@ impl<'tcx> VectorResolver<'tcx> {
             fn visit_terminator(&mut self, terminator: &Terminator<'tcx>, location: Location) {
                 self.locals.clear();
                 match &terminator.kind {
-                    SwitchInt { discr, switch_ty: _, targets: _ } => {
+                    SwitchInt {
+                        discr,
+                        switch_ty: _,
+                        targets: _,
+                    } => {
                         self.visit_operand(discr, location);
                         if self.r.break_blocks.contains(&location.block) {
-                            self.r.loop_stmts.push(BreakTerminator(location, self.locals.clone()));
+                            self.r
+                                .loop_stmts
+                                .push(BreakTerminator(location, self.locals.clone()));
                         } else {
                             unimplemented!("switch resolve fail on {:?}", location)
                         }
@@ -413,7 +466,14 @@ impl<'tcx> VectorResolver<'tcx> {
                             self.r.loop_stmts.push(GotoTerminator(location))
                         }
                     }
-                    Call { func, args, destination, cleanup: _, from_hir_call: _, fn_span: _ } => {
+                    Call {
+                        func,
+                        args,
+                        destination,
+                        cleanup: _,
+                        from_hir_call: _,
+                        fn_span: _,
+                    } => {
                         self.current_use = InLoop;
                         for op in args.iter().chain(Some(func)) {
                             self.visit_operand(op, location);
@@ -492,7 +552,12 @@ impl<'tcx> VectorResolver<'tcx> {
         (inner.to_vec(), vect.to_vec())
     }
 
-    fn resolve_vector_len<'r>(&'r mut self, body: &Body<'tcx>, tcx: TyCtxt<'tcx>, vect_stmts: &Vec<ExtraStmt<'tcx>>) {
+    fn resolve_vector_len<'r>(
+        &'r mut self,
+        body: &Body<'tcx>,
+        tcx: TyCtxt<'tcx>,
+        vect_stmts: &Vec<ExtraStmt<'tcx>>,
+    ) {
         let mut vector_type = None;
         for stmt in vect_stmts {
             match stmt {
@@ -516,7 +581,11 @@ impl<'tcx> VectorResolver<'tcx> {
             }
         }
         if let Some(ty) = vector_type {
-            let total_len = if tcx.sess.target.arch == "x86_64" { 1024 } else { 256 };
+            let total_len = if tcx.sess.target.arch == "x86_64" {
+                1024
+            } else {
+                256
+            };
             let elem_len = if ty == tcx.types.f32 {
                 32
             } else if ty == tcx.types.u8 {
@@ -528,28 +597,24 @@ impl<'tcx> VectorResolver<'tcx> {
         }
     }
 
-    fn get_vector(&self, temp: &Local) -> Local {
-        *self.temp_to_vector.get(temp).unwrap()
+    fn get_vector(&self, temp: &Local) -> Option<Local> {
+        *self.temp_to_vector.get(temp)
     }
 
-    fn insert_or_get_vector(
-        &mut self,
-        temp: &Local,
-        tcx: TyCtxt<'tcx>,
-        body: &mut Body<'tcx>,
-    ) -> Local {
+    fn insert_vector(&mut self, temp: &Local, tcx: TyCtxt<'tcx>, body: &mut Body<'tcx>) -> bool {
         if let Some(v) = self.temp_to_vector.get(temp) {
-            *v
+            false
         } else {
             let ty = body.local_decls[*temp].ty;
-            let v = body
-                .local_decls
-                .push(LocalDecl::new(tcx.mk_array(ty, self.vector_len.unwrap()), DUMMY_SP));
+            let v = body.local_decls.push(LocalDecl::new(
+                tcx.mk_array(ty, self.vector_len.unwrap()),
+                DUMMY_SP,
+            ));
             self.temp_to_vector.insert(*temp, v);
             if ty.is_primitive() {
                 body.vector.push(v);
             }
-            v
+            true
         }
     }
 
@@ -563,7 +628,10 @@ impl<'tcx> VectorResolver<'tcx> {
         to_inner_break: &mut Vec<BasicBlock>,
         to_remain_init: &mut Vec<BasicBlock>,
     ) {
-        let source_info = SourceInfo { span: DUMMY_SP, scope: OUTERMOST_SOURCE_SCOPE };
+        let source_info = SourceInfo {
+            span: DUMMY_SP,
+            scope: OUTERMOST_SOURCE_SCOPE,
+        };
         let pre_loop = *self.loops[0].0.last().unwrap();
         let start_loop = self.loops[0].1[0];
         let term = body[pre_loop].terminator_mut();
@@ -585,10 +653,14 @@ impl<'tcx> VectorResolver<'tcx> {
             ))),
         });
         let inner_loop = body.basic_blocks_mut().push(BasicBlockData::new(None));
-        body[outer_loop].terminator =
-            Some(Terminator { source_info, kind: Goto { target: inner_loop } });
+        body[outer_loop].terminator = Some(Terminator {
+            source_info,
+            kind: Goto { target: inner_loop },
+        });
 
-        let temp1 = body.local_decls.push(LocalDecl::new(tcx.types.usize, DUMMY_SP));
+        let temp1 = body
+            .local_decls
+            .push(LocalDecl::new(tcx.types.usize, DUMMY_SP));
         body[inner_loop].statements.push(Statement {
             source_info,
             kind: Assign(Box::new((
@@ -596,7 +668,9 @@ impl<'tcx> VectorResolver<'tcx> {
                 Rvalue::Use(Operand::Copy(Place::from(inner))),
             ))),
         });
-        let temp2 = body.local_decls.push(LocalDecl::new(tcx.types.bool, DUMMY_SP));
+        let temp2 = body
+            .local_decls
+            .push(LocalDecl::new(tcx.types.bool, DUMMY_SP));
         body[inner_loop].statements.push(Statement {
             source_info,
             kind: Assign(Box::new((
@@ -646,7 +720,12 @@ impl<'tcx> VectorResolver<'tcx> {
                         .find(|(_, lp_bb)| **lp_bb == location.block)
                         .unwrap()
                         .0;
-                    if let SwitchInt { discr, switch_ty, targets } = term.kind.clone() {
+                    if let SwitchInt {
+                        discr,
+                        switch_ty,
+                        targets,
+                    } = term.kind.clone()
+                    {
                         let next = body.basic_blocks_mut().push(BasicBlockData::new(None));
                         let mut new_targets = targets.clone();
                         for bb in new_targets.all_targets_mut() {
@@ -680,7 +759,8 @@ impl<'tcx> VectorResolver<'tcx> {
                     // the written value will not be read in the next loop.
                     // Otherwise, this mir cannot be vectorized.
                     if let Some(local) = place.as_local() {
-                        let temp_simd = self.insert_or_get_vector(&local, tcx, body);
+                        self.insert_vector(&place.as_local().unwrap(), tcx, body);
+                        let temp_simd = self.get_vector(&local).unwrap();
                         let des = Place {
                             local: temp_simd,
                             projection: tcx.intern_place_elems(&[PlaceElem::Index(inner)]),
@@ -714,8 +794,10 @@ impl<'tcx> VectorResolver<'tcx> {
                 ),
             ))),
         });
-        body[block].terminator =
-            Some(Terminator { source_info, kind: Goto { target: inner_loop } });
+        body[block].terminator = Some(Terminator {
+            source_info,
+            kind: Goto { target: inner_loop },
+        });
     }
 
     fn new_inner_loop<'r>(
@@ -726,7 +808,10 @@ impl<'tcx> VectorResolver<'tcx> {
         stmts: Vec<ExtraStmt<'tcx>>,
         inner: Local,
     ) -> BasicBlock {
-        let source_info = SourceInfo { span: DUMMY_SP, scope: OUTERMOST_SOURCE_SCOPE };
+        let source_info = SourceInfo {
+            span: DUMMY_SP,
+            scope: OUTERMOST_SOURCE_SCOPE,
+        };
         body[current].statements.push(Statement {
             source_info,
             kind: Assign(Box::new((
@@ -739,9 +824,13 @@ impl<'tcx> VectorResolver<'tcx> {
             ))),
         });
         let loop_start = body.basic_blocks_mut().push(BasicBlockData::new(None));
-        body[current].terminator =
-            Some(Terminator { source_info, kind: Goto { target: loop_start } });
-        let temp1 = body.local_decls.push(LocalDecl::new(tcx.types.usize, DUMMY_SP));
+        body[current].terminator = Some(Terminator {
+            source_info,
+            kind: Goto { target: loop_start },
+        });
+        let temp1 = body
+            .local_decls
+            .push(LocalDecl::new(tcx.types.usize, DUMMY_SP));
         body[loop_start].statements.push(Statement {
             source_info,
             kind: Assign(Box::new((
@@ -749,7 +838,9 @@ impl<'tcx> VectorResolver<'tcx> {
                 Rvalue::Use(Operand::Copy(Place::from(inner))),
             ))),
         });
-        let temp2 = body.local_decls.push(LocalDecl::new(tcx.types.bool, DUMMY_SP));
+        let temp2 = body
+            .local_decls
+            .push(LocalDecl::new(tcx.types.bool, DUMMY_SP));
         body[loop_start].statements.push(Statement {
             source_info,
             kind: Assign(Box::new((
@@ -772,20 +863,21 @@ impl<'tcx> VectorResolver<'tcx> {
             match stmt {
                 TempAssign(place, rvalue, bitset) => {
                     bitset.iter().for_each(|local| {
-                        let simd_rhs = self.get_vector(&local);
-                        body[loop_next].statements.push(Statement {
-                            source_info,
-                            kind: Assign(Box::new((
-                                Place::from(local),
-                                Rvalue::Use(Operand::Copy(Place {
-                                    local: simd_rhs,
-                                    projection: tcx.intern_place_elems(&[PlaceElem::Index(inner)]),
-                                })),
-                            ))),
-                        })
+                        if let Some(simd_rhs) = self.get_vector(&local) {
+                            body[loop_next].statements.push(Statement {
+                                source_info,
+                                kind: Assign(Box::new((
+                                    Place::from(local),
+                                    Rvalue::Use(Operand::Copy(Place {
+                                        local: simd_rhs,
+                                        projection: tcx.intern_place_elems(&[PlaceElem::Index(inner)]),
+                                    })),
+                                ))),
+                            })
+                        };
                     });
                     let local = place.as_local().unwrap();
-                    let simd_lhs = self.insert_or_get_vector(&local, tcx, body);
+                    let simd_lhs = self.get_vector(&local);
                     let des = Place {
                         local: simd_lhs,
                         projection: tcx.intern_place_elems(&[PlaceElem::Index(inner)]),
@@ -797,8 +889,14 @@ impl<'tcx> VectorResolver<'tcx> {
                 }
                 TempFuncTerminator(location) => {
                     let next = body.basic_blocks_mut().push(BasicBlockData::new(None));
-                    if let Call { func, args, destination, cleanup, from_hir_call, fn_span } =
-                        body[location.block].terminator().kind.clone()
+                    if let Call {
+                        func,
+                        args,
+                        destination,
+                        cleanup,
+                        from_hir_call,
+                        fn_span,
+                    } = body[location.block].terminator().kind.clone()
                     {
                         args.iter().for_each(|operand| {
                             let local = operand.place().unwrap().as_local().unwrap();
@@ -817,7 +915,7 @@ impl<'tcx> VectorResolver<'tcx> {
                         });
                         let place = destination.unwrap().0;
                         let local = place.as_local().unwrap();
-                        let simd_lhs = self.insert_or_get_vector(&local, tcx, body);
+                        let simd_lhs = self.get_vector(&local);
                         let des = Place {
                             local: simd_lhs,
                             projection: tcx.intern_place_elems(&[PlaceElem::Index(inner)]),
@@ -879,8 +977,10 @@ impl<'tcx> VectorResolver<'tcx> {
                 ),
             ))),
         });
-        body[loop_next].terminator =
-            Some(Terminator { source_info, kind: Goto { target: loop_start } });
+        body[loop_next].terminator = Some(Terminator {
+            source_info,
+            kind: Goto { target: loop_start },
+        });
 
         let loop_break = body.basic_blocks_mut().push(BasicBlockData::new(None));
         body[loop_start].terminator = Some(Terminator {
@@ -901,13 +1001,17 @@ impl<'tcx> VectorResolver<'tcx> {
         outer_loop: BasicBlock,
         vect_stmts: Vec<ExtraStmt<'tcx>>,
     ) -> Vec<VectorStmt<'tcx>> {
-        let source_info = SourceInfo { span: DUMMY_SP, scope: OUTERMOST_SOURCE_SCOPE };
+        let source_info = SourceInfo {
+            span: DUMMY_SP,
+            scope: OUTERMOST_SOURCE_SCOPE,
+        };
         let mut resolved_stmts = Vec::new();
         for stmt in &vect_stmts {
             match stmt {
                 TempStorage(location) => {
-                    let kind =
-                        body[location.block].statements[location.statement_index].kind.clone();
+                    let kind = body[location.block].statements[location.statement_index]
+                        .kind
+                        .clone();
                     resolved_stmts.push(StraightStmt(Statement { source_info, kind }));
                 }
                 AfterSet(place, rvalue, _bitset) => {
@@ -981,6 +1085,72 @@ impl<'tcx> VectorResolver<'tcx> {
         resolved_stmts
     }
 
+    fn resolve_temp_to_vector<'r>(
+        &'r mut self,
+        tcx: TyCtxt<'tcx>,
+        body: &mut Body<'tcx>,
+        resolved_stmts: &Vec<VectorStmt>,
+    ) {
+        let mut changed = true;
+        // insert vector from vertical statements
+        for stmt in resolved_stmts {
+            match stmt {
+                InnerLoopStmt(..) | StraightStmt(..) | StraightTerm(..) | UseAssign(..)
+                | BinOpAfterSet(..) => {}
+                BinOpAssign(place, _, op1, op2) => {
+                    self.insert_vector(&place.as_local().unwrap(), tcx, body);
+                    self.insert_vector(&op1.place().unwrap().as_local().unwrap(), tcx, body);
+                    self.insert_vector(&op2.place().unwrap().as_local().unwrap(), tcx, body);
+                }
+                VectorTerm(Symbol, args, des) => match Symbol {
+                    sym::simd_fsqrt => {
+                        self.insert_vector(&des.as_local().unwrap(), tcx, body);
+                        args.iter().for_each(|arg| {
+                            self.insert_vector(
+                                &arg.place().unwrap().as_local().unwrap(),
+                                tcx,
+                                body,
+                            );
+                        });
+                    }
+                    _ => unimplemented!("unimplemented vector func"),
+                },
+            }
+        }
+
+        // insert vector from inner loop statements and use rvalue
+        while changed {
+            changed = false;
+            for stmt in resolved_stmts {
+                match stmt {
+                    InnerLoopStmt(extra_stmt) => match extra_stmt {
+                        TempAssign(place, _rvalue, bitset) => {
+                            if bitset.iter().any(|local| self.get_vector(&local).is_some())
+                                && self.insert_vector(&place.as_local().unwrap(), tcx, body)
+                            {
+                                changed = true
+                            }
+                        }
+                        _ => {}
+                    },
+                    UseAssign(place, op) => {
+                        if let Some(rhs) = op.place().map(|place| place) {
+                            if let Some(rhs) = rhs.as_local() {
+                                if self.temp_to_vector.get(&rhs).is_some() {
+                                    if self.insert_vector(&place.as_local().unwrap(), tcx, body) {
+                                        changed = true;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    StraightStmt(..) | StraightTerm(..) | BinOpAfterSet(..) | BinOpAssign(..)
+                    | VectorTerm(..) => {}
+                }
+            }
+        }
+    }
+
     fn generate_vector_section<'r>(
         &'r mut self,
         tcx: TyCtxt<'tcx>,
@@ -990,9 +1160,11 @@ impl<'tcx> VectorResolver<'tcx> {
         inner: Local,
         outer_loop: BasicBlock,
     ) -> BasicBlock {
-        let source_info = SourceInfo { span: DUMMY_SP, scope: OUTERMOST_SOURCE_SCOPE };
-        let resolved_stmts =
-            self.resolve_vector_section(tcx, body, outer_loop, vect_stmts.clone());
+        let source_info = SourceInfo {
+            span: DUMMY_SP,
+            scope: OUTERMOST_SOURCE_SCOPE,
+        };
+        let resolved_stmts = self.resolve_vector_section(tcx, body, outer_loop, vect_stmts.clone());
         let mut inner_stmts = Vec::new();
         for stmt in resolved_stmts.into_iter() {
             if let InnerLoopStmt(stmt) = stmt {
@@ -1016,7 +1188,10 @@ impl<'tcx> VectorResolver<'tcx> {
                                     (Some(AfterLoop), Some(InLoop)) => {
                                         let func = match bin_op {
                                             BinOp::Add => sym::simd_reduce_add_unordered,
-                                            _ => unimplemented!("unimplemented after set bin op: {:?}", bin_op),
+                                            _ => unimplemented!(
+                                                "unimplemented after set bin op: {:?}",
+                                                bin_op
+                                            ),
                                         };
                                         let next =
                                             body.basic_blocks_mut().push(BasicBlockData::new(None));
@@ -1039,7 +1214,11 @@ impl<'tcx> VectorResolver<'tcx> {
                                         });
                                         current = next;
                                     }
-                                    _ => unimplemented!("set after ops local use: {:?} with {:?}", l1, l2),
+                                    _ => unimplemented!(
+                                        "set after ops local use: {:?} with {:?}",
+                                        l1,
+                                        l2
+                                    ),
                                 }
                             }
                             _ => unimplemented!("set after ops: {:?} with {:?}", op1, op2),
@@ -1049,7 +1228,7 @@ impl<'tcx> VectorResolver<'tcx> {
                         let simd_rhs =
                             self.get_vector(&operand.place().unwrap().as_local().unwrap());
                         let local = place.as_local().unwrap();
-                        let simd_lhs = self.insert_or_get_vector(&local, tcx, body);
+                        let simd_lhs = self.get_vector(&local);
                         body[current].statements.push(Statement {
                             source_info,
                             kind: Assign(Box::new((
@@ -1076,7 +1255,7 @@ impl<'tcx> VectorResolver<'tcx> {
                         ];
 
                         let des = place.as_local().unwrap();
-                        let simd_des = self.insert_or_get_vector(&des, tcx, body);
+                        let simd_des = self.get_vector(&des);
 
                         let next = body.basic_blocks_mut().push(BasicBlockData::new(None));
                         body[current].terminator = Some(Terminator {
@@ -1090,8 +1269,7 @@ impl<'tcx> VectorResolver<'tcx> {
                         current = next;
                     }
                     VectorTerm(func, args, des) => {
-                        let simd_des =
-                            self.insert_or_get_vector(&des.as_local().unwrap(), tcx, body);
+                        let simd_des = self.get_vector(&des.as_local().unwrap());
                         let args: Vec<_> = args
                             .iter()
                             .map(|arg| {
@@ -1135,9 +1313,14 @@ impl<'tcx> VectorResolver<'tcx> {
         inner: Local,
         remain_init: BasicBlock,
     ) {
-        let source_info = SourceInfo { span: DUMMY_SP, scope: OUTERMOST_SOURCE_SCOPE };
+        let source_info = SourceInfo {
+            span: DUMMY_SP,
+            scope: OUTERMOST_SOURCE_SCOPE,
+        };
         let break_point = *self.break_points.iter().next().unwrap();
-        let inside = body.local_decls.push(LocalDecl::new(tcx.types.usize, DUMMY_SP));
+        let inside = body
+            .local_decls
+            .push(LocalDecl::new(tcx.types.usize, DUMMY_SP));
         body[remain_init].statements.push(Statement {
             source_info,
             kind: Assign(Box::new((
@@ -1150,9 +1333,15 @@ impl<'tcx> VectorResolver<'tcx> {
             ))),
         });
         let remain_start = body.basic_blocks_mut().push(BasicBlockData::new(None));
-        body[remain_init].terminator =
-            Some(Terminator { source_info, kind: Goto { target: remain_start } });
-        let temp1 = body.local_decls.push(LocalDecl::new(tcx.types.usize, DUMMY_SP));
+        body[remain_init].terminator = Some(Terminator {
+            source_info,
+            kind: Goto {
+                target: remain_start,
+            },
+        });
+        let temp1 = body
+            .local_decls
+            .push(LocalDecl::new(tcx.types.usize, DUMMY_SP));
         body[remain_start].statements.push(Statement {
             source_info,
             kind: Assign(Box::new((
@@ -1160,7 +1349,9 @@ impl<'tcx> VectorResolver<'tcx> {
                 Rvalue::Use(Operand::Copy(Place::from(inside))),
             ))),
         });
-        let temp2 = body.local_decls.push(LocalDecl::new(tcx.types.usize, DUMMY_SP));
+        let temp2 = body
+            .local_decls
+            .push(LocalDecl::new(tcx.types.usize, DUMMY_SP));
         body[remain_start].statements.push(Statement {
             source_info,
             kind: Assign(Box::new((
@@ -1168,7 +1359,9 @@ impl<'tcx> VectorResolver<'tcx> {
                 Rvalue::Use(Operand::Copy(Place::from(inner))),
             ))),
         });
-        let temp3 = body.local_decls.push(LocalDecl::new(tcx.types.bool, DUMMY_SP));
+        let temp3 = body
+            .local_decls
+            .push(LocalDecl::new(tcx.types.bool, DUMMY_SP));
         body[remain_start].statements.push(Statement {
             source_info,
             kind: Assign(Box::new((
@@ -1196,8 +1389,9 @@ impl<'tcx> VectorResolver<'tcx> {
         for stmt in vect_stmts {
             match stmt {
                 TempStorage(location) => {
-                    let kind =
-                        body[location.block].statements[location.statement_index].kind.clone();
+                    let kind = body[location.block].statements[location.statement_index]
+                        .kind
+                        .clone();
                     body[block].statements.push(Statement { source_info, kind });
                 }
                 AfterSet(place, rvalue, _) => {
@@ -1229,8 +1423,14 @@ impl<'tcx> VectorResolver<'tcx> {
                 }
                 TempFuncTerminator(location) => {
                     let next = body.basic_blocks_mut().push(BasicBlockData::new(None));
-                    if let Call { func, args, destination, cleanup, from_hir_call, fn_span } =
-                        body[location.block].terminator().kind.clone()
+                    if let Call {
+                        func,
+                        args,
+                        destination,
+                        cleanup,
+                        from_hir_call,
+                        fn_span,
+                    } = body[location.block].terminator().kind.clone()
                     {
                         body[block].terminator = Some(Terminator {
                             source_info,
@@ -1266,8 +1466,12 @@ impl<'tcx> VectorResolver<'tcx> {
                             ),
                         ))),
                     });
-                    body[block].terminator =
-                        Some(Terminator { source_info, kind: Goto { target: remain_start } });
+                    body[block].terminator = Some(Terminator {
+                        source_info,
+                        kind: Goto {
+                            target: remain_start,
+                        },
+                    });
                 }
                 _ => unimplemented!("resolve vertical stmt failed: {:?}", stmt),
             }
@@ -1278,7 +1482,9 @@ impl<'tcx> VectorResolver<'tcx> {
         let (condi_stmts, vect_stmts) = self.resolve_segments();
         self.resolve_vector_len(body, tcx, &vect_stmts);
 
-        let inner = body.local_decls.push(LocalDecl::new(tcx.types.usize, DUMMY_SP));
+        let inner = body
+            .local_decls
+            .push(LocalDecl::new(tcx.types.usize, DUMMY_SP));
 
         let outer_loop = body.basic_blocks_mut().push(BasicBlockData::new(None));
 
