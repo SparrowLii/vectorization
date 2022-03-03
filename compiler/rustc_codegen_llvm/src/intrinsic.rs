@@ -22,9 +22,9 @@ use rustc_span::{sym, symbol::kw, Span, Symbol, DUMMY_SP};
 use rustc_target::abi::{self, Align, HasDataLayout, Primitive};
 use rustc_target::spec::{HasTargetSpec, PanicStrategy};
 
+use rustc_target::abi::Abi::Vector;
 use std::cmp::Ordering;
 use std::iter;
-use rustc_target::abi::Abi::Vector;
 
 fn get_simple_intrinsic<'ll>(
     cx: &CodegenCx<'ll, '_>,
@@ -396,15 +396,15 @@ impl<'ll, 'tcx> IntrinsicCallMethods<'tcx> for Builder<'_, 'll, 'tcx> {
         assert_eq!(span, DUMMY_SP);
 
         let (elem_ty, in_len) = match func {
-            sym::simd_fsqrt | sym::simd_reduce_add_unordered => {
-                match args[0].layout.abi {
-                    Vector{ element, count } => {
-                        (element.value.to_ty(self.tcx), count)
-                    }
-                    _ => bug!("wrong vector layout: {:?} for {:?}", args[0].layout, args[0])
-                }
-            }
-            _ => unimplemented!("{:?} is not supported in vectorization now", func)
+            sym::simd_fsqrt
+            | sym::simd_reduce_add_unordered
+            | sym::simd_and
+            | sym::simd_shr
+            | sym::simd_add => match args[0].layout.abi {
+                Vector { element, count } => (element.value.to_ty(self.tcx), count),
+                _ => bug!("wrong vector layout: {:?} for {:?}", args[0].layout, args[0]),
+            },
+            _ => unimplemented!("{:?} is not supported in vectorization now", func),
         };
 
         let llval = match func {
@@ -412,37 +412,61 @@ impl<'ll, 'tcx> IntrinsicCallMethods<'tcx> for Builder<'_, 'll, 'tcx> {
                 let elem_ll_ty = if elem_ty == self.tcx.types.f32 {
                     self.cx.type_f32()
                 } else {
-                    unimplemented!("element type {:?} is not supported in vectorization now", elem_ty)
+                    unimplemented!(
+                        "element type {:?} is not supported in vectorization now",
+                        elem_ty
+                    )
                 };
                 let vec_ty = self.type_vector(elem_ll_ty, in_len);
                 let (intr_name, fn_ty) = match func {
                     sym::simd_fsqrt => ("sqrt", self.type_func(&[vec_ty], vec_ty)),
-                    _ => unimplemented!("{:?} is not supported in vectorization now", func)
+                    _ => unimplemented!("{:?} is not supported in vectorization now", func),
                 };
                 let elem_str = if elem_ty == self.tcx.types.f32 {
                     "f32"
                 } else {
-                    unimplemented!("element type {:?} is not supported in vectorization now", elem_ty)
+                    unimplemented!(
+                        "element type {:?} is not supported in vectorization now",
+                        elem_ty
+                    )
                 };
                 let llvm_name = &format!("llvm.{0}.v{1}{2}", intr_name, in_len, elem_str);
                 let f = self.declare_cfn(llvm_name, llvm::UnnamedAddr::No, fn_ty);
-                self.call(fn_ty, f, &args.iter().map(|arg| arg.immediate()).collect::<Vec<_>>(), None)
+                self.call(
+                    fn_ty,
+                    f,
+                    &args.iter().map(|arg| arg.immediate()).collect::<Vec<_>>(),
+                    None,
+                )
             }
             sym::simd_reduce_add_unordered => {
-                let acc = if elem_ty == self.tcx.types.f32 {
-                    self.const_real(self.type_f32(), 0.)
-                } else if elem_ty == self.tcx.types.f64 {
-                    self.const_real(self.type_f32(), 0.)
+                if elem_ty == self.tcx.types.u8 {
+                    self.vector_reduce_add(args[0].immediate())
                 } else {
-                    unimplemented!("unsupported element type : {:?}", elem_ty)
-                };
-                self.vector_reduce_fadd_fast(acc, args[0].immediate())
+                    let acc = if elem_ty == self.tcx.types.f32 {
+                        self.const_real(self.type_f32(), 0.)
+                    } else if elem_ty == self.tcx.types.f64 {
+                        self.const_real(self.type_f32(), 0.)
+                    } else {
+                        unimplemented!("unsupported element type : {:?}", elem_ty)
+                    };
+                    self.vector_reduce_fadd_fast(acc, args[0].immediate())
+                }
             }
-            _ => unimplemented!("{:?} is not supported in vectorization now", func)
+            sym::simd_and => self.and(args[0].immediate(), args[1].immediate()),
+            sym::simd_add => {
+                if elem_ty == self.tcx.types.f32 || elem_ty == self.tcx.types.f64 {
+                    self.fadd(args[0].immediate(), args[1].immediate())
+                } else {
+                    self.add(args[0].immediate(), args[1].immediate())
+                }
+            }
+            sym::simd_shr => self.lshr(args[0].immediate(), args[1].immediate()),
+            _ => unimplemented!("{:?} is not supported in vectorization now", func),
         };
 
         let ret_ly = match func {
-            sym::simd_fsqrt => args[0].layout,
+            sym::simd_fsqrt | sym::simd_and | sym::simd_shr | sym::simd_add => args[0].layout,
             sym::simd_reduce_add_unordered => {
                 if let ty::Array(ele_ty, _) = args[0].layout.ty.kind() {
                     self.cx.layout_of(ele_ty)
@@ -450,11 +474,13 @@ impl<'ll, 'tcx> IntrinsicCallMethods<'tcx> for Builder<'_, 'll, 'tcx> {
                     bug!("non vector type: {:?}", args[0])
                 }
             }
-            _ => unimplemented!("{:?} is not supported in vectorization now", func)
+            _ => unimplemented!("{:?} is not supported in vectorization now", func),
         };
         let result = PlaceRef::new_sized(llresult, ret_ly);
 
-        OperandRef::from_immediate_or_packed_pair(self, llval, result.layout).val.store(self, result);
+        OperandRef::from_immediate_or_packed_pair(self, llval, result.layout)
+            .val
+            .store(self, result);
     }
 
     fn abort(&mut self) {

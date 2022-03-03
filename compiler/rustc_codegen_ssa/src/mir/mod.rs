@@ -209,7 +209,7 @@ pub fn codegen_mir<'a, 'tcx, Bx: BuilderMethods<'a, 'tcx>>(
 
         let mut allocate_local = |local| {
             let decl = &mir.local_decls[local];
-            let layout = if mir.vector.iter().any(|v| v == &local) {
+            let layout = if decl.vector {
                 let TyAndLayout {
                     ty,
                     layout: Layout { variants, fields, abi: _, largest_niche: _, align: _, size },
@@ -219,7 +219,7 @@ pub fn codegen_mir<'a, 'tcx, Bx: BuilderMethods<'a, 'tcx>>(
                     Variants::Single { index },
                     FieldsShape::Array { stride, count },
                 ) = (ty.kind(), variants, fields) else {
-                    bug!("wrong layout for vector locals")
+                    bug!("wrong layout for vector locals : {:?}, {:?}, {:?}, {:?}",local, ty, variants, fields)
                 };
                 let e_ly = bx.layout_of(elem).layout;
                 let Abi::Scalar(e_abi) = e_ly.abi else {

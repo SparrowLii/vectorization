@@ -843,6 +843,7 @@ macro_rules! make_mir_visitor {
                     internal: _,
                     local_info: _,
                     is_block_tail: _,
+                    vector: _,
                 } = local_decl;
 
                 self.visit_ty(ty, TyContext::LocalDecl {

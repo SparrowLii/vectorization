@@ -284,8 +284,6 @@ pub struct Body<'tcx> {
 
     predecessor_cache: PredecessorCache,
     is_cyclic: GraphIsCyclicCache,
-
-    pub vector: Vec<Local>,
 }
 
 impl<'tcx> Body<'tcx> {
@@ -332,7 +330,6 @@ impl<'tcx> Body<'tcx> {
             is_polymorphic: false,
             predecessor_cache: PredecessorCache::new(),
             is_cyclic: GraphIsCyclicCache::new(),
-            vector: Vec::new(),
         };
         body.is_polymorphic = body.definitely_has_param_types_or_consts(tcx);
         body
@@ -360,7 +357,6 @@ impl<'tcx> Body<'tcx> {
             is_polymorphic: false,
             predecessor_cache: PredecessorCache::new(),
             is_cyclic: GraphIsCyclicCache::new(),
-            vector: Vec::new(),
         }
     }
 
@@ -1001,6 +997,8 @@ pub struct LocalDecl<'tcx> {
     ///  │ │← `drop(x)` // This accesses `x: u32`.
     /// ```
     pub source_info: SourceInfo,
+
+    pub vector: bool,
 }
 
 // `LocalDecl` is used a lot. Make sure it doesn't unintentionally get bigger.
@@ -1124,6 +1122,7 @@ impl<'tcx> LocalDecl<'tcx> {
             ty,
             user_ty: None,
             source_info,
+            vector: false,
         }
     }
 
