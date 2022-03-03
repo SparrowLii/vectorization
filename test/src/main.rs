@@ -4,8 +4,9 @@ mod demo;
 mod loop_simd;
 mod iter_simd;
 mod hex_encode;
+mod var;
 
 fn main() {
-    loop_simd::use_loop();
+    var::use_var();
 }
 
