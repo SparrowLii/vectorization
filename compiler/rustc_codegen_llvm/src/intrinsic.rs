@@ -400,7 +400,8 @@ impl<'ll, 'tcx> IntrinsicCallMethods<'tcx> for Builder<'_, 'll, 'tcx> {
             | sym::simd_reduce_add_unordered
             | sym::simd_and
             | sym::simd_shr
-            | sym::simd_add => match args[0].layout.abi {
+            | sym::simd_add
+            | sym::simd_mul => match args[0].layout.abi {
                 Vector { element, count } => (element.value.to_ty(self.tcx), count),
                 _ => bug!("wrong vector layout: {:?} for {:?}", args[0].layout, args[0]),
             },
@@ -461,12 +462,19 @@ impl<'ll, 'tcx> IntrinsicCallMethods<'tcx> for Builder<'_, 'll, 'tcx> {
                     self.add(args[0].immediate(), args[1].immediate())
                 }
             }
+            sym::simd_mul => {
+                if elem_ty == self.tcx.types.f32 || elem_ty == self.tcx.types.f64 {
+                    self.fmul(args[0].immediate(), args[1].immediate())
+                } else {
+                    self.mul(args[0].immediate(), args[1].immediate())
+                }
+            }
             sym::simd_shr => self.lshr(args[0].immediate(), args[1].immediate()),
             _ => unimplemented!("{:?} is not supported in vectorization now", func),
         };
 
         let ret_ly = match func {
-            sym::simd_fsqrt | sym::simd_and | sym::simd_shr | sym::simd_add => args[0].layout,
+            sym::simd_fsqrt | sym::simd_and | sym::simd_shr | sym::simd_add | sym::simd_mul => args[0].layout,
             sym::simd_reduce_add_unordered => {
                 if let ty::Array(ele_ty, _) = args[0].layout.ty.kind() {
                     self.cx.layout_of(ele_ty)

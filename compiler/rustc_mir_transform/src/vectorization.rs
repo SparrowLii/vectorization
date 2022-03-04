@@ -1517,6 +1517,7 @@ impl<'tcx> VectorResolver<'tcx> {
                         let func = match bin_op {
                             BinOp::Add => sym::simd_add,
                             BinOp::Shr => sym::simd_shr,
+                            BinOp::Mul => sym::simd_mul,
                             BinOp::BitAnd => sym::simd_and,
                             _ => unimplemented!("unimplemented binop: {:?}", bin_op),
                         };

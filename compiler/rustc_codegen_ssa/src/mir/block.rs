@@ -920,7 +920,7 @@ impl<'a, 'tcx, Bx: BuilderMethods<'a, 'tcx>> FunctionCx<'a, 'tcx, Bx> {
         let args: Vec<_> = args.iter().map(|arg| self.codegen_operand(&mut bx, arg)).collect();
 
         let ret_ly = match func {
-            sym::simd_fsqrt | sym::simd_shr | sym::simd_and | sym::simd_add => args[0].layout,
+            sym::simd_fsqrt | sym::simd_shr | sym::simd_and | sym::simd_add | sym::simd_mul => args[0].layout,
             sym::simd_reduce_add_unordered => {
                 if let ty::Array(ele_ty, _) = args[0].layout.ty.kind() {
                     bx.cx().layout_of(ele_ty)

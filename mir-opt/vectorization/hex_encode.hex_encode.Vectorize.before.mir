@@ -1,0 +1,190 @@
+// MIR for `hex_encode` before Vectorize
+
+fn hex_encode(_1: &[u8], _2: &mut [u8]) -> () {
+    debug src => _1;                     // in scope 0 at $DIR/hex_encode.rs:35:15: 35:18
+    debug dst => _2;                     // in scope 0 at $DIR/hex_encode.rs:35:27: 35:30
+    let mut _0: ();                      // return place in scope 0 at $DIR/hex_encode.rs:35:43: 35:43
+    let mut _3: std::iter::Zip<std::slice::Iter<u8>, std::slice::ChunksMut<u8>>; // in scope 0 at $DIR/hex_encode.rs:41:26: 41:59
+    let mut _4: std::iter::Zip<std::slice::Iter<u8>, std::slice::ChunksMut<u8>>; // in scope 0 at $DIR/hex_encode.rs:41:26: 41:59
+    let mut _5: std::slice::Iter<u8>;    // in scope 0 at $DIR/hex_encode.rs:41:26: 41:36
+    let mut _6: &[u8];                   // in scope 0 at $DIR/hex_encode.rs:41:26: 41:36
+    let mut _7: std::slice::ChunksMut<u8>; // in scope 0 at $DIR/hex_encode.rs:41:41: 41:58
+    let mut _8: &mut [u8];               // in scope 0 at $DIR/hex_encode.rs:41:41: 41:58
+    let mut _9: std::iter::Zip<std::slice::Iter<u8>, std::slice::ChunksMut<u8>>; // in scope 0 at $DIR/hex_encode.rs:41:26: 41:59
+    let mut _10: std::option::Option<(&u8, &mut [u8])>; // in scope 0 at $DIR/hex_encode.rs:41:26: 41:59
+    let mut _11: &mut std::iter::Zip<std::slice::Iter<u8>, std::slice::ChunksMut<u8>>; // in scope 0 at $DIR/hex_encode.rs:41:26: 41:59
+    let mut _12: &mut std::iter::Zip<std::slice::Iter<u8>, std::slice::ChunksMut<u8>>; // in scope 0 at $DIR/hex_encode.rs:41:26: 41:59
+    let mut _13: isize;                  // in scope 0 at $DIR/hex_encode.rs:41:5: 44:6
+    let mut _16: u8;                     // in scope 0 at $DIR/hex_encode.rs:42:20: 42:43
+    let mut _17: u8;                     // in scope 0 at $DIR/hex_encode.rs:42:24: 42:42
+    let mut _18: u8;                     // in scope 0 at $DIR/hex_encode.rs:42:24: 42:36
+    let mut _19: u8;                     // in scope 0 at $DIR/hex_encode.rs:42:25: 42:30
+    let _20: usize;                      // in scope 0 at $DIR/hex_encode.rs:42:15: 42:16
+    let mut _21: usize;                  // in scope 0 at $DIR/hex_encode.rs:42:9: 42:17
+    let mut _22: bool;                   // in scope 0 at $DIR/hex_encode.rs:42:9: 42:17
+    let mut _23: u8;                     // in scope 0 at $DIR/hex_encode.rs:43:20: 43:36
+    let mut _24: u8;                     // in scope 0 at $DIR/hex_encode.rs:43:24: 43:35
+    let mut _25: u8;                     // in scope 0 at $DIR/hex_encode.rs:43:24: 43:29
+    let _26: usize;                      // in scope 0 at $DIR/hex_encode.rs:43:15: 43:16
+    let mut _27: usize;                  // in scope 0 at $DIR/hex_encode.rs:43:9: 43:17
+    let mut _28: bool;                   // in scope 0 at $DIR/hex_encode.rs:43:9: 43:17
+    scope 1 {
+        debug iter => _9;                // in scope 1 at $DIR/hex_encode.rs:41:26: 41:59
+        let _14: &u8;                    // in scope 1 at $DIR/hex_encode.rs:41:10: 41:14
+        let _15: &mut [u8];              // in scope 1 at $DIR/hex_encode.rs:41:16: 41:21
+        scope 2 {
+            debug byte => _14;           // in scope 2 at $DIR/hex_encode.rs:41:10: 41:14
+            debug slots => _15;          // in scope 2 at $DIR/hex_encode.rs:41:16: 41:21
+        }
+        scope 5 (inlined <Zip<std::slice::Iter<u8>, ChunksMut<u8>> as Iterator>::next) { // at $DIR/hex_encode.rs:41:26: 41:59
+            debug self => _11;           // in scope 5 at $DIR/hex_encode.rs:41:26: 41:59
+            let mut _30: &mut std::iter::Zip<std::slice::Iter<u8>, std::slice::ChunksMut<u8>>; // in scope 5 at $DIR/hex_encode.rs:41:26: 41:59
+        }
+    }
+    scope 3 (inlined core::slice::<impl [u8]>::iter) { // at $DIR/hex_encode.rs:41:26: 41:36
+        debug self => _6;                // in scope 3 at $DIR/hex_encode.rs:41:26: 41:36
+        let mut _29: &[u8];              // in scope 3 at $DIR/hex_encode.rs:41:26: 41:36
+    }
+    scope 4 (inlined <Zip<std::slice::Iter<u8>, ChunksMut<u8>> as IntoIterator>::into_iter) { // at $DIR/hex_encode.rs:41:26: 41:59
+        debug self => _4;                // in scope 4 at $DIR/hex_encode.rs:41:26: 41:59
+    }
+
+    bb0: {
+        StorageLive(_3);                 // scope 0 at $DIR/hex_encode.rs:41:26: 41:59
+        StorageLive(_4);                 // scope 0 at $DIR/hex_encode.rs:41:26: 41:59
+        StorageLive(_5);                 // scope 0 at $DIR/hex_encode.rs:41:26: 41:36
+        StorageLive(_6);                 // scope 0 at $DIR/hex_encode.rs:41:26: 41:36
+        _6 = _1;                         // scope 0 at $DIR/hex_encode.rs:41:26: 41:36
+        StorageLive(_29);                // scope 3 at $DIR/hex_encode.rs:41:26: 41:36
+        _29 = _6;                        // scope 3 at $DIR/hex_encode.rs:41:26: 41:36
+        _5 = std::slice::Iter::<u8>::new(move _29) -> bb10; // scope 3 at $DIR/hex_encode.rs:41:26: 41:36
+                                         // mir::Constant
+                                         // + span: $DIR/hex_encode.rs:41:26: 41:36
+                                         // + user_ty: UserType(0)
+                                         // + literal: Const { ty: fn(&[u8]) -> std::slice::Iter<u8> {std::slice::Iter::<u8>::new}, val: Value(Scalar(<ZST>)) }
+    }
+
+    bb1: {
+        StorageDead(_8);                 // scope 0 at $DIR/hex_encode.rs:41:57: 41:58
+        _4 = <std::slice::Iter<u8> as Iterator>::zip::<ChunksMut<u8>>(move _5, move _7) -> bb2; // scope 0 at $DIR/hex_encode.rs:41:26: 41:59
+                                         // mir::Constant
+                                         // + span: $DIR/hex_encode.rs:41:37: 41:40
+                                         // + literal: Const { ty: fn(std::slice::Iter<u8>, std::slice::ChunksMut<u8>) -> std::iter::Zip<std::slice::Iter<u8>, <std::slice::ChunksMut<u8> as std::iter::IntoIterator>::IntoIter> {<std::slice::Iter<u8> as std::iter::Iterator>::zip::<std::slice::ChunksMut<u8>>}, val: Value(Scalar(<ZST>)) }
+    }
+
+    bb2: {
+        StorageDead(_7);                 // scope 0 at $DIR/hex_encode.rs:41:58: 41:59
+        StorageDead(_5);                 // scope 0 at $DIR/hex_encode.rs:41:58: 41:59
+        _3 = move _4;                    // scope 4 at $DIR/hex_encode.rs:41:26: 41:59
+        StorageDead(_4);                 // scope 0 at $DIR/hex_encode.rs:41:58: 41:59
+        StorageLive(_9);                 // scope 0 at $DIR/hex_encode.rs:41:26: 41:59
+        _9 = move _3;                    // scope 0 at $DIR/hex_encode.rs:41:26: 41:59
+        goto -> bb3;                     // scope 1 at $DIR/hex_encode.rs:41:5: 44:6
+    }
+
+    bb3: {
+        StorageLive(_10);                // scope 1 at $DIR/hex_encode.rs:41:26: 41:59
+        StorageLive(_11);                // scope 1 at $DIR/hex_encode.rs:41:26: 41:59
+        StorageLive(_12);                // scope 1 at $DIR/hex_encode.rs:41:26: 41:59
+        _12 = &mut _9;                   // scope 1 at $DIR/hex_encode.rs:41:26: 41:59
+        _11 = &mut (*_12);               // scope 1 at $DIR/hex_encode.rs:41:26: 41:59
+        StorageLive(_30);                // scope 5 at $DIR/hex_encode.rs:41:26: 41:59
+        _30 = &mut (*_11);               // scope 5 at $DIR/hex_encode.rs:41:26: 41:59
+        _10 = <Zip<std::slice::Iter<u8>, ChunksMut<u8>> as iter::adapters::zip::ZipImpl<std::slice::Iter<u8>, ChunksMut<u8>>>::next(move _30) -> bb11; // scope 5 at $DIR/hex_encode.rs:41:26: 41:59
+                                         // mir::Constant
+                                         // + span: $DIR/hex_encode.rs:41:26: 41:59
+                                         // + literal: Const { ty: for<'r> fn(&'r mut std::iter::Zip<std::slice::Iter<u8>, std::slice::ChunksMut<u8>>) -> std::option::Option<<std::iter::Zip<std::slice::Iter<u8>, std::slice::ChunksMut<u8>> as std::iter::adapters::zip::ZipImpl<std::slice::Iter<u8>, std::slice::ChunksMut<u8>>>::Item> {<std::iter::Zip<std::slice::Iter<u8>, std::slice::ChunksMut<u8>> as std::iter::adapters::zip::ZipImpl<std::slice::Iter<u8>, std::slice::ChunksMut<u8>>>::next}, val: Value(Scalar(<ZST>)) }
+    }
+
+    bb4: {
+        StorageLive(_14);                // scope 1 at $DIR/hex_encode.rs:41:10: 41:14
+        _14 = (((_10 as Some).0: (&u8, &mut [u8])).0: &u8); // scope 1 at $DIR/hex_encode.rs:41:10: 41:14
+        StorageLive(_15);                // scope 1 at $DIR/hex_encode.rs:41:16: 41:21
+        _15 = move (((_10 as Some).0: (&u8, &mut [u8])).1: &mut [u8]); // scope 1 at $DIR/hex_encode.rs:41:16: 41:21
+        StorageLive(_16);                // scope 2 at $DIR/hex_encode.rs:42:20: 42:43
+        StorageLive(_17);                // scope 2 at $DIR/hex_encode.rs:42:24: 42:42
+        StorageLive(_18);                // scope 2 at $DIR/hex_encode.rs:42:24: 42:36
+        StorageLive(_19);                // scope 2 at $DIR/hex_encode.rs:42:25: 42:30
+        _19 = (*_14);                    // scope 2 at $DIR/hex_encode.rs:42:25: 42:30
+        _18 = Shr(move _19, const 4_i32); // scope 2 at $DIR/hex_encode.rs:42:24: 42:36
+        StorageDead(_19);                // scope 2 at $DIR/hex_encode.rs:42:35: 42:36
+        _17 = BitAnd(move _18, const 15_u8); // scope 2 at $DIR/hex_encode.rs:42:24: 42:42
+        StorageDead(_18);                // scope 2 at $DIR/hex_encode.rs:42:41: 42:42
+        _16 = hex_encode::hex(move _17) -> bb6; // scope 2 at $DIR/hex_encode.rs:42:20: 42:43
+                                         // mir::Constant
+                                         // + span: $DIR/hex_encode.rs:42:20: 42:23
+                                         // + literal: Const { ty: fn(u8) -> u8 {hex_encode::hex}, val: Value(Scalar(<ZST>)) }
+    }
+
+    bb5: {
+        StorageDead(_12);                // scope 1 at $DIR/hex_encode.rs:44:5: 44:6
+        StorageDead(_10);                // scope 1 at $DIR/hex_encode.rs:44:5: 44:6
+        StorageDead(_9);                 // scope 0 at $DIR/hex_encode.rs:44:5: 44:6
+        StorageDead(_3);                 // scope 0 at $DIR/hex_encode.rs:44:5: 44:6
+        return;                          // scope 0 at $DIR/hex_encode.rs:45:2: 45:2
+    }
+
+    bb6: {
+        StorageDead(_17);                // scope 2 at $DIR/hex_encode.rs:42:42: 42:43
+        StorageLive(_20);                // scope 2 at $DIR/hex_encode.rs:42:15: 42:16
+        _20 = const 0_usize;             // scope 2 at $DIR/hex_encode.rs:42:15: 42:16
+        _21 = Len((*_15));               // scope 2 at $DIR/hex_encode.rs:42:9: 42:17
+        _22 = Lt(const 0_usize, _21);    // scope 2 at $DIR/hex_encode.rs:42:9: 42:17
+        assert(move _22, "index out of bounds: the length is {} but the index is {}", move _21, const 0_usize) -> bb7; // scope 2 at $DIR/hex_encode.rs:42:9: 42:17
+    }
+
+    bb7: {
+        (*_15)[_20] = move _16;          // scope 2 at $DIR/hex_encode.rs:42:9: 42:43
+        StorageDead(_16);                // scope 2 at $DIR/hex_encode.rs:42:42: 42:43
+        StorageDead(_20);                // scope 2 at $DIR/hex_encode.rs:42:43: 42:44
+        StorageLive(_23);                // scope 2 at $DIR/hex_encode.rs:43:20: 43:36
+        StorageLive(_24);                // scope 2 at $DIR/hex_encode.rs:43:24: 43:35
+        StorageLive(_25);                // scope 2 at $DIR/hex_encode.rs:43:24: 43:29
+        _25 = (*_14);                    // scope 2 at $DIR/hex_encode.rs:43:24: 43:29
+        _24 = BitAnd(move _25, const 15_u8); // scope 2 at $DIR/hex_encode.rs:43:24: 43:35
+        StorageDead(_25);                // scope 2 at $DIR/hex_encode.rs:43:34: 43:35
+        _23 = hex_encode::hex(move _24) -> bb8; // scope 2 at $DIR/hex_encode.rs:43:20: 43:36
+                                         // mir::Constant
+                                         // + span: $DIR/hex_encode.rs:43:20: 43:23
+                                         // + literal: Const { ty: fn(u8) -> u8 {hex_encode::hex}, val: Value(Scalar(<ZST>)) }
+    }
+
+    bb8: {
+        StorageDead(_24);                // scope 2 at $DIR/hex_encode.rs:43:35: 43:36
+        StorageLive(_26);                // scope 2 at $DIR/hex_encode.rs:43:15: 43:16
+        _26 = const 1_usize;             // scope 2 at $DIR/hex_encode.rs:43:15: 43:16
+        _27 = Len((*_15));               // scope 2 at $DIR/hex_encode.rs:43:9: 43:17
+        _28 = Lt(const 1_usize, _27);    // scope 2 at $DIR/hex_encode.rs:43:9: 43:17
+        assert(move _28, "index out of bounds: the length is {} but the index is {}", move _27, const 1_usize) -> bb9; // scope 2 at $DIR/hex_encode.rs:43:9: 43:17
+    }
+
+    bb9: {
+        (*_15)[_26] = move _23;          // scope 2 at $DIR/hex_encode.rs:43:9: 43:36
+        StorageDead(_23);                // scope 2 at $DIR/hex_encode.rs:43:35: 43:36
+        StorageDead(_26);                // scope 2 at $DIR/hex_encode.rs:43:36: 43:37
+        StorageDead(_15);                // scope 1 at $DIR/hex_encode.rs:44:5: 44:6
+        StorageDead(_14);                // scope 1 at $DIR/hex_encode.rs:44:5: 44:6
+        StorageDead(_12);                // scope 1 at $DIR/hex_encode.rs:44:5: 44:6
+        StorageDead(_10);                // scope 1 at $DIR/hex_encode.rs:44:5: 44:6
+        goto -> bb3;                     // scope 1 at $DIR/hex_encode.rs:41:5: 44:6
+    }
+
+    bb10: {
+        StorageDead(_29);                // scope 3 at $DIR/hex_encode.rs:41:26: 41:36
+        StorageDead(_6);                 // scope 0 at $DIR/hex_encode.rs:41:35: 41:36
+        StorageLive(_7);                 // scope 0 at $DIR/hex_encode.rs:41:41: 41:58
+        StorageLive(_8);                 // scope 0 at $DIR/hex_encode.rs:41:41: 41:58
+        _8 = &mut (*_2);                 // scope 0 at $DIR/hex_encode.rs:41:41: 41:58
+        _7 = core::slice::<impl [u8]>::chunks_mut(move _8, const 2_usize) -> bb1; // scope 0 at $DIR/hex_encode.rs:41:41: 41:58
+                                         // mir::Constant
+                                         // + span: $DIR/hex_encode.rs:41:45: 41:55
+                                         // + literal: Const { ty: for<'r> fn(&'r mut [u8], usize) -> std::slice::ChunksMut<'r, u8> {core::slice::<impl [u8]>::chunks_mut}, val: Value(Scalar(<ZST>)) }
+    }
+
+    bb11: {
+        StorageDead(_30);                // scope 5 at $DIR/hex_encode.rs:41:26: 41:59
+        StorageDead(_11);                // scope 1 at $DIR/hex_encode.rs:41:58: 41:59
+        _13 = discriminant(_10);         // scope 1 at $DIR/hex_encode.rs:41:26: 41:59
+        switchInt(move _13) -> [0_isize: bb5, otherwise: bb4]; // scope 1 at $DIR/hex_encode.rs:41:26: 41:59
+    }
+}
