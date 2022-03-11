@@ -1,66 +1,86 @@
 // MIR for `var1` before Vectorize
 
 fn var1(_1: &[f32]) -> f32 {
-    debug arr => _1;                     // in scope 0 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:28:9: 28:12
-    let mut _0: f32;                     // return place in scope 0 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:28:25: 28:28
-    let mut _2: f32;                     // in scope 0 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:29:9: 29:19
-    let mut _5: usize;                   // in scope 0 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:31:15: 31:24
-    let mut _6: &[f32];                  // in scope 0 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:31:15: 31:24
-    let mut _7: std::slice::Iter<f32>;   // in scope 0 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:32:14: 32:17
-    let mut _8: &[f32];                  // in scope 0 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:32:14: 32:17
-    let mut _10: std::option::Option<&f32>; // in scope 0 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:32:14: 32:17
-    let mut _11: &mut std::slice::Iter<f32>; // in scope 0 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:32:14: 32:17
-    let mut _12: &mut std::slice::Iter<f32>; // in scope 0 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:32:14: 32:17
-    let mut _13: isize;                  // in scope 0 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:32:5: 36:6
-    let mut _16: f32;                    // in scope 0 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:34:16: 34:17
-    let mut _17: f32;                    // in scope 0 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:35:19: 35:24
-    let mut _18: f32;                    // in scope 0 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:35:19: 35:20
-    let mut _19: f32;                    // in scope 0 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:35:23: 35:24
-    let mut _21: f32;                    // in scope 0 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:37:15: 37:18
-    let mut _22: f32;                    // in scope 0 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:37:21: 37:24
-    let mut _23: f32;                    // in scope 0 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:38:5: 38:32
-    let mut _24: f32;                    // in scope 0 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:38:6: 38:19
-    let mut _25: f32;                    // in scope 0 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:38:6: 38:12
-    let mut _26: f32;                    // in scope 0 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:38:16: 38:19
-    let mut _27: f32;                    // in scope 0 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:38:22: 38:31
-    let mut _28: f32;                    // in scope 0 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:38:22: 38:25
-    let mut _29: f32;                    // in scope 0 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:38:28: 38:31
+    debug arr => _1;                     // in scope 0 at $DIR/var.rs:28:9: 28:12
+    let mut _0: f32;                     // return place in scope 0 at $DIR/var.rs:28:25: 28:28
+    let mut _2: f32;                     // in scope 0 at $DIR/var.rs:29:9: 29:19
+    let mut _5: usize;                   // in scope 0 at $DIR/var.rs:31:15: 31:24
+    let mut _6: &[f32];                  // in scope 0 at $DIR/var.rs:31:15: 31:24
+    let mut _7: std::slice::Iter<f32>;   // in scope 0 at $DIR/var.rs:32:14: 32:17
+    let mut _8: &[f32];                  // in scope 0 at $DIR/var.rs:32:14: 32:17
+    let mut _10: std::option::Option<&f32>; // in scope 0 at $DIR/var.rs:32:14: 32:17
+    let mut _11: &mut std::slice::Iter<f32>; // in scope 0 at $DIR/var.rs:32:14: 32:17
+    let mut _12: &mut std::slice::Iter<f32>; // in scope 0 at $DIR/var.rs:32:14: 32:17
+    let mut _13: isize;                  // in scope 0 at $DIR/var.rs:32:5: 35:6
+    let mut _15: &mut f32;               // in scope 0 at $DIR/var.rs:33:9: 33:12
+    let mut _16: &f32;                   // in scope 0 at $DIR/var.rs:33:16: 33:17
+    let mut _17: f32;                    // in scope 0 at $DIR/var.rs:34:19: 34:24
+    let mut _18: &f32;                   // in scope 0 at $DIR/var.rs:34:19: 34:20
+    let mut _19: &f32;                   // in scope 0 at $DIR/var.rs:34:23: 34:24
+    let mut _21: f32;                    // in scope 0 at $DIR/var.rs:36:15: 36:18
+    let mut _22: f32;                    // in scope 0 at $DIR/var.rs:36:21: 36:24
+    let mut _23: f32;                    // in scope 0 at $DIR/var.rs:37:5: 37:32
+    let mut _24: f32;                    // in scope 0 at $DIR/var.rs:37:6: 37:19
+    let mut _25: f32;                    // in scope 0 at $DIR/var.rs:37:6: 37:12
+    let mut _26: f32;                    // in scope 0 at $DIR/var.rs:37:16: 37:19
+    let mut _27: f32;                    // in scope 0 at $DIR/var.rs:37:22: 37:31
+    let mut _28: f32;                    // in scope 0 at $DIR/var.rs:37:22: 37:25
+    let mut _29: f32;                    // in scope 0 at $DIR/var.rs:37:28: 37:31
     scope 1 {
-        debug sq_sum => _2;              // in scope 1 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:29:9: 29:19
-        let mut _3: f32;                 // in scope 1 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:30:9: 30:16
+        debug sq_sum => _2;              // in scope 1 at $DIR/var.rs:29:9: 29:19
+        let mut _3: f32;                 // in scope 1 at $DIR/var.rs:30:9: 30:16
         scope 2 {
-            debug sum => _3;             // in scope 2 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:30:9: 30:16
-            let _4: f32;                 // in scope 2 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:31:9: 31:12
+            debug sum => _3;             // in scope 2 at $DIR/var.rs:30:9: 30:16
+            let _4: f32;                 // in scope 2 at $DIR/var.rs:31:9: 31:12
             scope 3 {
-                debug len => _4;         // in scope 3 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:31:9: 31:12
-                let mut _9: std::slice::Iter<f32>; // in scope 3 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:32:14: 32:17
-                let _20: f32;            // in scope 3 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:37:9: 37:12
+                debug len => _4;         // in scope 3 at $DIR/var.rs:31:9: 31:12
+                let mut _9: std::slice::Iter<f32>; // in scope 3 at $DIR/var.rs:32:14: 32:17
+                let _20: f32;            // in scope 3 at $DIR/var.rs:36:9: 36:12
                 scope 4 {
-                    debug iter => _9;    // in scope 4 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:32:14: 32:17
-                    let _14: &f32;       // in scope 4 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:32:9: 32:10
+                    debug iter => _9;    // in scope 4 at $DIR/var.rs:32:14: 32:17
+                    let _14: &f32;       // in scope 4 at $DIR/var.rs:32:9: 32:10
                     scope 5 {
-                        debug i => _14;  // in scope 5 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:32:9: 32:10
-                        let _15: f32;    // in scope 5 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:33:13: 33:14
-                        scope 6 {
-                            debug i => _15; // in scope 6 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:33:13: 33:14
+                        debug i => _14;  // in scope 5 at $DIR/var.rs:32:9: 32:10
+                        scope 9 (inlined <f32 as AddAssign<&f32>>::add_assign) { // at $DIR/var.rs:33:9: 33:17
+                            debug self => _15; // in scope 9 at $DIR/var.rs:33:9: 33:17
+                            debug other => _16; // in scope 9 at $DIR/var.rs:33:9: 33:17
+                            let mut _32: &mut f32; // in scope 9 at $DIR/var.rs:33:9: 33:17
+                            let mut _33: f32; // in scope 9 at $DIR/var.rs:33:9: 33:17
+                            scope 10 (inlined <f32 as AddAssign>::add_assign) { // at $DIR/var.rs:33:9: 33:17
+                                debug self => _32; // in scope 10 at $DIR/var.rs:33:9: 33:17
+                                debug other => _33; // in scope 10 at $DIR/var.rs:33:9: 33:17
+                                let mut _34: f32; // in scope 10 at $DIR/var.rs:33:9: 33:17
+                            }
+                        }
+                        scope 13 (inlined <&f32 as Mul>::mul) { // at $DIR/var.rs:34:19: 34:24
+                            debug self => _18; // in scope 13 at $DIR/var.rs:34:19: 34:24
+                            debug other => _19; // in scope 13 at $DIR/var.rs:34:19: 34:24
+                            let mut _36: f32; // in scope 13 at $DIR/var.rs:34:19: 34:24
+                            let mut _37: f32; // in scope 13 at $DIR/var.rs:34:19: 34:24
+                            scope 14 (inlined <f32 as Mul>::mul) { // at $DIR/var.rs:34:19: 34:24
+                                debug self => _36; // in scope 14 at $DIR/var.rs:34:19: 34:24
+                                debug other => _37; // in scope 14 at $DIR/var.rs:34:19: 34:24
+                                let mut _38: f32; // in scope 14 at $DIR/var.rs:34:19: 34:24
+                                let mut _39: f32; // in scope 14 at $DIR/var.rs:34:19: 34:24
+                            }
                         }
                     }
                 }
-                scope 7 {
-                    debug ave => _20;    // in scope 7 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:37:9: 37:12
-                    scope 10 (inlined f32::<impl f32>::sqrt) { // at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:38:5: 38:39
-                        debug self => _23; // in scope 10 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:38:5: 38:39
-                        let mut _32: f32; // in scope 10 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:38:5: 38:39
-                        scope 11 {
+                scope 6 {
+                    debug ave => _20;    // in scope 6 at $DIR/var.rs:36:9: 36:12
+                    scope 11 (inlined f32::<impl f32>::sqrt) { // at $DIR/var.rs:37:5: 37:39
+                        debug self => _23; // in scope 11 at $DIR/var.rs:37:5: 37:39
+                        let mut _35: f32; // in scope 11 at $DIR/var.rs:37:5: 37:39
+                        scope 12 {
                         }
                     }
                 }
-                scope 8 (inlined core::slice::iter::<impl IntoIterator for &[f32]>::into_iter) { // at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:32:14: 32:17
-                    debug self => _8;    // in scope 8 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:32:14: 32:17
-                    let mut _30: &[f32]; // in scope 8 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:32:14: 32:17
-                    scope 9 (inlined core::slice::<impl [f32]>::iter) { // at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:32:14: 32:17
-                        debug self => _30; // in scope 9 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:32:14: 32:17
-                        let mut _31: &[f32]; // in scope 9 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:32:14: 32:17
+                scope 7 (inlined core::slice::iter::<impl IntoIterator for &[f32]>::into_iter) { // at $DIR/var.rs:32:14: 32:17
+                    debug self => _8;    // in scope 7 at $DIR/var.rs:32:14: 32:17
+                    let mut _30: &[f32]; // in scope 7 at $DIR/var.rs:32:14: 32:17
+                    scope 8 (inlined core::slice::<impl [f32]>::iter) { // at $DIR/var.rs:32:14: 32:17
+                        debug self => _30; // in scope 8 at $DIR/var.rs:32:14: 32:17
+                        let mut _31: &[f32]; // in scope 8 at $DIR/var.rs:32:14: 32:17
                     }
                 }
             }
@@ -68,133 +88,154 @@ fn var1(_1: &[f32]) -> f32 {
     }
 
     bb0: {
-        StorageLive(_2);                 // scope 0 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:29:9: 29:19
-        _2 = const 0f32;                 // scope 0 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:29:22: 29:24
-        StorageLive(_3);                 // scope 1 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:30:9: 30:16
-        _3 = const 0f32;                 // scope 1 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:30:19: 30:21
-        StorageLive(_4);                 // scope 2 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:31:9: 31:12
-        StorageLive(_5);                 // scope 2 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:31:15: 31:24
-        StorageLive(_6);                 // scope 2 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:31:15: 31:24
-        _6 = _1;                         // scope 2 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:31:15: 31:24
-        _5 = Len((*_6));                 // scope 2 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:31:15: 31:24
-        StorageDead(_6);                 // scope 2 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:31:23: 31:24
-        _4 = move _5 as f32 (Misc);      // scope 2 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:31:15: 31:31
-        StorageDead(_5);                 // scope 2 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:31:30: 31:31
-        StorageLive(_7);                 // scope 3 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:32:14: 32:17
-        StorageLive(_8);                 // scope 3 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:32:14: 32:17
-        _8 = _1;                         // scope 3 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:32:14: 32:17
-        StorageLive(_30);                // scope 8 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:32:14: 32:17
-        _30 = _8;                        // scope 8 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:32:14: 32:17
-        StorageLive(_31);                // scope 9 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:32:14: 32:17
-        _31 = _30;                       // scope 9 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:32:14: 32:17
-        _7 = std::slice::Iter::<f32>::new(move _31) -> bb5; // scope 9 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:32:14: 32:17
+        StorageLive(_2);                 // scope 0 at $DIR/var.rs:29:9: 29:19
+        _2 = const 0f32;                 // scope 0 at $DIR/var.rs:29:22: 29:24
+        StorageLive(_3);                 // scope 1 at $DIR/var.rs:30:9: 30:16
+        _3 = const 0f32;                 // scope 1 at $DIR/var.rs:30:19: 30:21
+        StorageLive(_4);                 // scope 2 at $DIR/var.rs:31:9: 31:12
+        StorageLive(_5);                 // scope 2 at $DIR/var.rs:31:15: 31:24
+        StorageLive(_6);                 // scope 2 at $DIR/var.rs:31:15: 31:24
+        _6 = _1;                         // scope 2 at $DIR/var.rs:31:15: 31:24
+        _5 = Len((*_6));                 // scope 2 at $DIR/var.rs:31:15: 31:24
+        StorageDead(_6);                 // scope 2 at $DIR/var.rs:31:23: 31:24
+        _4 = move _5 as f32 (Misc);      // scope 2 at $DIR/var.rs:31:15: 31:31
+        StorageDead(_5);                 // scope 2 at $DIR/var.rs:31:30: 31:31
+        StorageLive(_7);                 // scope 3 at $DIR/var.rs:32:14: 32:17
+        StorageLive(_8);                 // scope 3 at $DIR/var.rs:32:14: 32:17
+        _8 = _1;                         // scope 3 at $DIR/var.rs:32:14: 32:17
+        StorageLive(_30);                // scope 7 at $DIR/var.rs:32:14: 32:17
+        _30 = _8;                        // scope 7 at $DIR/var.rs:32:14: 32:17
+        StorageLive(_31);                // scope 8 at $DIR/var.rs:32:14: 32:17
+        _31 = _30;                       // scope 8 at $DIR/var.rs:32:14: 32:17
+        _7 = std::slice::Iter::<f32>::new(move _31) -> bb5; // scope 8 at $DIR/var.rs:32:14: 32:17
                                          // mir::Constant
-                                         // + span: D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:32:14: 32:17
+                                         // + span: $DIR/var.rs:32:14: 32:17
                                          // + user_ty: UserType(0)
                                          // + literal: Const { ty: fn(&[f32]) -> std::slice::Iter<f32> {std::slice::Iter::<f32>::new}, val: Value(Scalar(<ZST>)) }
     }
 
     bb1: {
-        StorageLive(_10);                // scope 4 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:32:14: 32:17
-        StorageLive(_11);                // scope 4 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:32:14: 32:17
-        StorageLive(_12);                // scope 4 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:32:14: 32:17
-        _12 = &mut _9;                   // scope 4 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:32:14: 32:17
-        _11 = &mut (*_12);               // scope 4 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:32:14: 32:17
-        _10 = <std::slice::Iter<f32> as Iterator>::next(move _11) -> bb2; // scope 4 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:32:14: 32:17
+        StorageLive(_10);                // scope 4 at $DIR/var.rs:32:14: 32:17
+        StorageLive(_11);                // scope 4 at $DIR/var.rs:32:14: 32:17
+        StorageLive(_12);                // scope 4 at $DIR/var.rs:32:14: 32:17
+        _12 = &mut _9;                   // scope 4 at $DIR/var.rs:32:14: 32:17
+        _11 = &mut (*_12);               // scope 4 at $DIR/var.rs:32:14: 32:17
+        _10 = <std::slice::Iter<f32> as Iterator>::next(move _11) -> bb2; // scope 4 at $DIR/var.rs:32:14: 32:17
                                          // mir::Constant
-                                         // + span: D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:32:14: 32:17
+                                         // + span: $DIR/var.rs:32:14: 32:17
                                          // + literal: Const { ty: for<'r> fn(&'r mut std::slice::Iter<f32>) -> std::option::Option<<std::slice::Iter<f32> as std::iter::Iterator>::Item> {<std::slice::Iter<f32> as std::iter::Iterator>::next}, val: Value(Scalar(<ZST>)) }
     }
 
     bb2: {
-        StorageDead(_11);                // scope 4 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:32:16: 32:17
-        _13 = discriminant(_10);         // scope 4 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:32:14: 32:17
-        switchInt(move _13) -> [0_isize: bb4, otherwise: bb3]; // scope 4 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:32:14: 32:17
+        StorageDead(_11);                // scope 4 at $DIR/var.rs:32:16: 32:17
+        _13 = discriminant(_10);         // scope 4 at $DIR/var.rs:32:14: 32:17
+        switchInt(move _13) -> [0_isize: bb4, otherwise: bb3]; // scope 4 at $DIR/var.rs:32:14: 32:17
     }
 
     bb3: {
-        StorageLive(_14);                // scope 4 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:32:9: 32:10
-        _14 = ((_10 as Some).0: &f32);   // scope 4 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:32:9: 32:10
-        StorageLive(_15);                // scope 5 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:33:13: 33:14
-        _15 = (*_14);                    // scope 5 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:33:17: 33:19
-        StorageLive(_16);                // scope 6 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:34:16: 34:17
-        _16 = _15;                       // scope 6 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:34:16: 34:17
-        _3 = Add(_3, move _16);          // scope 6 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:34:9: 34:17
-        StorageDead(_16);                // scope 6 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:34:16: 34:17
-        StorageLive(_17);                // scope 6 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:35:19: 35:24
-        StorageLive(_18);                // scope 6 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:35:19: 35:20
-        _18 = _15;                       // scope 6 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:35:19: 35:20
-        StorageLive(_19);                // scope 6 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:35:23: 35:24
-        _19 = _15;                       // scope 6 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:35:23: 35:24
-        _17 = Mul(move _18, move _19);   // scope 6 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:35:19: 35:24
-        StorageDead(_19);                // scope 6 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:35:23: 35:24
-        StorageDead(_18);                // scope 6 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:35:23: 35:24
-        _2 = Add(_2, move _17);          // scope 6 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:35:9: 35:24
-        StorageDead(_17);                // scope 6 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:35:23: 35:24
-        StorageDead(_15);                // scope 5 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:36:5: 36:6
-        StorageDead(_14);                // scope 4 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:36:5: 36:6
-        StorageDead(_12);                // scope 4 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:36:5: 36:6
-        StorageDead(_10);                // scope 4 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:36:5: 36:6
-        goto -> bb1;                     // scope 4 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:32:5: 36:6
+        StorageLive(_14);                // scope 4 at $DIR/var.rs:32:9: 32:10
+        _14 = ((_10 as Some).0: &f32);   // scope 4 at $DIR/var.rs:32:9: 32:10
+        StorageLive(_15);                // scope 5 at $DIR/var.rs:33:9: 33:12
+        _15 = &mut _3;                   // scope 5 at $DIR/var.rs:33:9: 33:12
+        StorageLive(_16);                // scope 5 at $DIR/var.rs:33:16: 33:17
+        _16 = _14;                       // scope 5 at $DIR/var.rs:33:16: 33:17
+        StorageLive(_32);                // scope 9 at $DIR/var.rs:33:9: 33:17
+        _32 = &mut (*_15);               // scope 9 at $DIR/var.rs:33:9: 33:17
+        StorageLive(_33);                // scope 9 at $DIR/var.rs:33:9: 33:17
+        _33 = (*_16);                    // scope 9 at $DIR/var.rs:33:9: 33:17
+        StorageLive(_34);                // scope 10 at $DIR/var.rs:33:9: 33:17
+        _34 = _33;                       // scope 10 at $DIR/var.rs:33:9: 33:17
+        (*_32) = Add((*_32), move _34);  // scope 10 at $DIR/var.rs:33:9: 33:17
+        StorageDead(_34);                // scope 10 at $DIR/var.rs:33:9: 33:17
+        StorageDead(_33);                // scope 9 at $DIR/var.rs:33:9: 33:17
+        StorageDead(_32);                // scope 9 at $DIR/var.rs:33:9: 33:17
+        StorageDead(_16);                // scope 5 at $DIR/var.rs:33:16: 33:17
+        StorageDead(_15);                // scope 5 at $DIR/var.rs:33:16: 33:17
+        StorageLive(_17);                // scope 5 at $DIR/var.rs:34:19: 34:24
+        StorageLive(_18);                // scope 5 at $DIR/var.rs:34:19: 34:20
+        _18 = _14;                       // scope 5 at $DIR/var.rs:34:19: 34:20
+        StorageLive(_19);                // scope 5 at $DIR/var.rs:34:23: 34:24
+        _19 = _14;                       // scope 5 at $DIR/var.rs:34:23: 34:24
+        StorageLive(_36);                // scope 13 at $DIR/var.rs:34:19: 34:24
+        _36 = (*_18);                    // scope 13 at $DIR/var.rs:34:19: 34:24
+        StorageLive(_37);                // scope 13 at $DIR/var.rs:34:19: 34:24
+        _37 = (*_19);                    // scope 13 at $DIR/var.rs:34:19: 34:24
+        StorageLive(_38);                // scope 14 at $DIR/var.rs:34:19: 34:24
+        _38 = _36;                       // scope 14 at $DIR/var.rs:34:19: 34:24
+        StorageLive(_39);                // scope 14 at $DIR/var.rs:34:19: 34:24
+        _39 = _37;                       // scope 14 at $DIR/var.rs:34:19: 34:24
+        _17 = Mul(move _38, move _39);   // scope 14 at $DIR/var.rs:34:19: 34:24
+        StorageDead(_39);                // scope 14 at $DIR/var.rs:34:19: 34:24
+        StorageDead(_38);                // scope 14 at $DIR/var.rs:34:19: 34:24
+        StorageDead(_37);                // scope 13 at $DIR/var.rs:34:19: 34:24
+        StorageDead(_36);                // scope 13 at $DIR/var.rs:34:19: 34:24
+        StorageDead(_19);                // scope 5 at $DIR/var.rs:34:23: 34:24
+        StorageDead(_18);                // scope 5 at $DIR/var.rs:34:23: 34:24
+        _2 = Add(_2, move _17);          // scope 5 at $DIR/var.rs:34:9: 34:24
+        StorageDead(_17);                // scope 5 at $DIR/var.rs:34:23: 34:24
+        StorageDead(_14);                // scope 4 at $DIR/var.rs:35:5: 35:6
+        StorageDead(_12);                // scope 4 at $DIR/var.rs:35:5: 35:6
+        StorageDead(_10);                // scope 4 at $DIR/var.rs:35:5: 35:6
+        goto -> bb1;                     // scope 4 at $DIR/var.rs:32:5: 35:6
     }
 
     bb4: {
-        StorageDead(_12);                // scope 4 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:36:5: 36:6
-        StorageDead(_10);                // scope 4 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:36:5: 36:6
-        StorageDead(_9);                 // scope 3 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:36:5: 36:6
-        StorageDead(_7);                 // scope 3 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:36:5: 36:6
-        StorageLive(_20);                // scope 3 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:37:9: 37:12
-        StorageLive(_21);                // scope 3 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:37:15: 37:18
-        _21 = _3;                        // scope 3 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:37:15: 37:18
-        StorageLive(_22);                // scope 3 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:37:21: 37:24
-        _22 = _4;                        // scope 3 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:37:21: 37:24
-        _20 = Div(move _21, move _22);   // scope 3 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:37:15: 37:24
-        StorageDead(_22);                // scope 3 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:37:23: 37:24
-        StorageDead(_21);                // scope 3 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:37:23: 37:24
-        StorageLive(_23);                // scope 7 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:38:5: 38:32
-        StorageLive(_24);                // scope 7 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:38:6: 38:19
-        StorageLive(_25);                // scope 7 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:38:6: 38:12
-        _25 = _2;                        // scope 7 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:38:6: 38:12
-        StorageLive(_26);                // scope 7 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:38:16: 38:19
-        _26 = _4;                        // scope 7 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:38:16: 38:19
-        _24 = Div(move _25, move _26);   // scope 7 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:38:6: 38:19
-        StorageDead(_26);                // scope 7 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:38:18: 38:19
-        StorageDead(_25);                // scope 7 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:38:18: 38:19
-        StorageLive(_27);                // scope 7 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:38:22: 38:31
-        StorageLive(_28);                // scope 7 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:38:22: 38:25
-        _28 = _20;                       // scope 7 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:38:22: 38:25
-        StorageLive(_29);                // scope 7 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:38:28: 38:31
-        _29 = _20;                       // scope 7 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:38:28: 38:31
-        _27 = Mul(move _28, move _29);   // scope 7 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:38:22: 38:31
-        StorageDead(_29);                // scope 7 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:38:30: 38:31
-        StorageDead(_28);                // scope 7 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:38:30: 38:31
-        _23 = Sub(move _24, move _27);   // scope 7 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:38:5: 38:32
-        StorageDead(_27);                // scope 7 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:38:31: 38:32
-        StorageDead(_24);                // scope 7 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:38:31: 38:32
-        StorageLive(_32);                // scope 11 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:38:5: 38:39
-        _32 = _23;                       // scope 11 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:38:5: 38:39
-        _0 = sqrtf32(move _32) -> bb6;   // scope 11 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:38:5: 38:39
+        StorageDead(_12);                // scope 4 at $DIR/var.rs:35:5: 35:6
+        StorageDead(_10);                // scope 4 at $DIR/var.rs:35:5: 35:6
+        StorageDead(_9);                 // scope 3 at $DIR/var.rs:35:5: 35:6
+        StorageDead(_7);                 // scope 3 at $DIR/var.rs:35:5: 35:6
+        StorageLive(_20);                // scope 3 at $DIR/var.rs:36:9: 36:12
+        StorageLive(_21);                // scope 3 at $DIR/var.rs:36:15: 36:18
+        _21 = _3;                        // scope 3 at $DIR/var.rs:36:15: 36:18
+        StorageLive(_22);                // scope 3 at $DIR/var.rs:36:21: 36:24
+        _22 = _4;                        // scope 3 at $DIR/var.rs:36:21: 36:24
+        _20 = Div(move _21, move _22);   // scope 3 at $DIR/var.rs:36:15: 36:24
+        StorageDead(_22);                // scope 3 at $DIR/var.rs:36:23: 36:24
+        StorageDead(_21);                // scope 3 at $DIR/var.rs:36:23: 36:24
+        StorageLive(_23);                // scope 6 at $DIR/var.rs:37:5: 37:32
+        StorageLive(_24);                // scope 6 at $DIR/var.rs:37:6: 37:19
+        StorageLive(_25);                // scope 6 at $DIR/var.rs:37:6: 37:12
+        _25 = _2;                        // scope 6 at $DIR/var.rs:37:6: 37:12
+        StorageLive(_26);                // scope 6 at $DIR/var.rs:37:16: 37:19
+        _26 = _4;                        // scope 6 at $DIR/var.rs:37:16: 37:19
+        _24 = Div(move _25, move _26);   // scope 6 at $DIR/var.rs:37:6: 37:19
+        StorageDead(_26);                // scope 6 at $DIR/var.rs:37:18: 37:19
+        StorageDead(_25);                // scope 6 at $DIR/var.rs:37:18: 37:19
+        StorageLive(_27);                // scope 6 at $DIR/var.rs:37:22: 37:31
+        StorageLive(_28);                // scope 6 at $DIR/var.rs:37:22: 37:25
+        _28 = _20;                       // scope 6 at $DIR/var.rs:37:22: 37:25
+        StorageLive(_29);                // scope 6 at $DIR/var.rs:37:28: 37:31
+        _29 = _20;                       // scope 6 at $DIR/var.rs:37:28: 37:31
+        _27 = Mul(move _28, move _29);   // scope 6 at $DIR/var.rs:37:22: 37:31
+        StorageDead(_29);                // scope 6 at $DIR/var.rs:37:30: 37:31
+        StorageDead(_28);                // scope 6 at $DIR/var.rs:37:30: 37:31
+        _23 = Sub(move _24, move _27);   // scope 6 at $DIR/var.rs:37:5: 37:32
+        StorageDead(_27);                // scope 6 at $DIR/var.rs:37:31: 37:32
+        StorageDead(_24);                // scope 6 at $DIR/var.rs:37:31: 37:32
+        StorageLive(_35);                // scope 12 at $DIR/var.rs:37:5: 37:39
+        _35 = _23;                       // scope 12 at $DIR/var.rs:37:5: 37:39
+        _0 = sqrtf32(move _35) -> bb6;   // scope 12 at $DIR/var.rs:37:5: 37:39
                                          // mir::Constant
-                                         // + span: D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:38:5: 38:39
+                                         // + span: $DIR/var.rs:37:5: 37:39
                                          // + literal: Const { ty: unsafe extern "rust-intrinsic" fn(f32) -> f32 {std::intrinsics::sqrtf32}, val: Value(Scalar(<ZST>)) }
     }
 
     bb5: {
-        StorageDead(_31);                // scope 9 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:32:14: 32:17
-        StorageDead(_30);                // scope 8 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:32:14: 32:17
-        StorageDead(_8);                 // scope 3 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:32:16: 32:17
-        StorageLive(_9);                 // scope 3 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:32:14: 32:17
-        _9 = move _7;                    // scope 3 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:32:14: 32:17
-        goto -> bb1;                     // scope 4 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:32:5: 36:6
+        StorageDead(_31);                // scope 8 at $DIR/var.rs:32:14: 32:17
+        StorageDead(_30);                // scope 7 at $DIR/var.rs:32:14: 32:17
+        StorageDead(_8);                 // scope 3 at $DIR/var.rs:32:16: 32:17
+        StorageLive(_9);                 // scope 3 at $DIR/var.rs:32:14: 32:17
+        _9 = move _7;                    // scope 3 at $DIR/var.rs:32:14: 32:17
+        goto -> bb1;                     // scope 4 at $DIR/var.rs:32:5: 35:6
     }
 
     bb6: {
-        StorageDead(_32);                // scope 11 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:38:5: 38:39
-        StorageDead(_23);                // scope 7 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:38:38: 38:39
-        StorageDead(_20);                // scope 3 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:39:1: 39:2
-        StorageDead(_4);                 // scope 2 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:39:1: 39:2
-        StorageDead(_3);                 // scope 1 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:39:1: 39:2
-        StorageDead(_2);                 // scope 0 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:39:1: 39:2
-        return;                          // scope 0 at D:\rust-backup\rust\src/test\mir-opt\vectorization\var.rs:39:2: 39:2
+        StorageDead(_35);                // scope 12 at $DIR/var.rs:37:5: 37:39
+        StorageDead(_23);                // scope 6 at $DIR/var.rs:37:38: 37:39
+        StorageDead(_20);                // scope 3 at $DIR/var.rs:38:1: 38:2
+        StorageDead(_4);                 // scope 2 at $DIR/var.rs:38:1: 38:2
+        StorageDead(_3);                 // scope 1 at $DIR/var.rs:38:1: 38:2
+        StorageDead(_2);                 // scope 0 at $DIR/var.rs:38:1: 38:2
+        return;                          // scope 0 at $DIR/var.rs:38:2: 38:2
     }
 }

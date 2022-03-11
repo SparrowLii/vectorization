@@ -161,11 +161,7 @@ impl<'cx, 'tcx> Visitor<'tcx> for InvalidationGenerator<'cx, 'tcx> {
                     self.mutate_place(location, *dest, Deep, JustWrite);
                 }
             }
-            TerminatorKind::VectorFunc {
-                func: _,
-                ref args,
-                destination,
-            } => {
+            TerminatorKind::VectorFunc { func: _, ref args, destination } => {
                 for arg in args {
                     self.consume_operand(location, arg);
                 }

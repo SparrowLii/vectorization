@@ -326,12 +326,12 @@ impl<'tcx> TerminatorKind<'tcx> {
             | Return
             | Unreachable
             | Call { destination: None, cleanup: None, .. }
-            | VectorFunc { destination: None, ..}
+            | VectorFunc { destination: None, .. }
             | InlineAsm { destination: None, cleanup: None, .. } => None.into_iter().chain(&[]),
             Goto { target: ref t }
             | Call { destination: None, cleanup: Some(ref t), .. }
             | Call { destination: Some((_, ref t)), cleanup: None, .. }
-            | VectorFunc { destination: Some((_, ref t)), ..}
+            | VectorFunc { destination: Some((_, ref t)), .. }
             | Yield { resume: ref t, drop: None, .. }
             | DropAndReplace { target: ref t, unwind: None, .. }
             | Drop { target: ref t, unwind: None, .. }
@@ -371,7 +371,7 @@ impl<'tcx> TerminatorKind<'tcx> {
             Goto { target: ref mut t }
             | Call { destination: None, cleanup: Some(ref mut t), .. }
             | Call { destination: Some((_, ref mut t)), cleanup: None, .. }
-            | VectorFunc { destination: Some((_, ref mut t)), ..}
+            | VectorFunc { destination: Some((_, ref mut t)), .. }
             | Yield { resume: ref mut t, drop: None, .. }
             | DropAndReplace { target: ref mut t, unwind: None, .. }
             | Drop { target: ref mut t, unwind: None, .. }
@@ -514,7 +514,7 @@ impl<'tcx> TerminatorKind<'tcx> {
                 }
                 write!(fmt, ")")
             }
-            VectorFunc { func, args, destination} => {
+            VectorFunc { func, args, destination } => {
                 if let Some((destination, _)) = destination {
                     write!(fmt, "{:?} = ", destination)?;
                 }

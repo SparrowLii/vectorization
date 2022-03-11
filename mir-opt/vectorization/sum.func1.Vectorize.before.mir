@@ -1,0 +1,96 @@
+// MIR for `func1` before Vectorize
+
+fn func1(_1: &[f32]) -> f32 {
+    debug arr => _1;                     // in scope 0 at $DIR/sum.rs:34:10: 34:13
+    let mut _0: f32;                     // return place in scope 0 at $DIR/sum.rs:35:9: 35:16
+    let mut _2: std::slice::Iter<f32>;   // in scope 0 at $DIR/sum.rs:36:14: 36:17
+    let mut _3: &[f32];                  // in scope 0 at $DIR/sum.rs:36:14: 36:17
+    let mut _5: std::option::Option<&f32>; // in scope 0 at $DIR/sum.rs:36:14: 36:17
+    let mut _6: &mut std::slice::Iter<f32>; // in scope 0 at $DIR/sum.rs:36:14: 36:17
+    let mut _7: &mut std::slice::Iter<f32>; // in scope 0 at $DIR/sum.rs:36:14: 36:17
+    let mut _8: isize;                   // in scope 0 at $DIR/sum.rs:36:5: 38:6
+    let mut _10: f32;                    // in scope 0 at $DIR/sum.rs:37:16: 37:18
+    scope 1 {
+        debug sum => _0;                 // in scope 1 at $DIR/sum.rs:35:9: 35:16
+        let mut _4: std::slice::Iter<f32>; // in scope 1 at $DIR/sum.rs:36:14: 36:17
+        scope 2 {
+            debug iter => _4;            // in scope 2 at $DIR/sum.rs:36:14: 36:17
+            let _9: &f32;                // in scope 2 at $DIR/sum.rs:36:9: 36:10
+            scope 3 {
+                debug i => _9;           // in scope 3 at $DIR/sum.rs:36:9: 36:10
+            }
+        }
+        scope 4 (inlined core::slice::iter::<impl IntoIterator for &[f32]>::into_iter) { // at $DIR/sum.rs:36:14: 36:17
+            debug self => _3;            // in scope 4 at $DIR/sum.rs:36:14: 36:17
+            let mut _11: &[f32];         // in scope 4 at $DIR/sum.rs:36:14: 36:17
+            scope 5 (inlined core::slice::<impl [f32]>::iter) { // at $DIR/sum.rs:36:14: 36:17
+                debug self => _11;       // in scope 5 at $DIR/sum.rs:36:14: 36:17
+                let mut _12: &[f32];     // in scope 5 at $DIR/sum.rs:36:14: 36:17
+            }
+        }
+    }
+
+    bb0: {
+        _0 = const 0f32;                 // scope 0 at $DIR/sum.rs:35:19: 35:21
+        StorageLive(_2);                 // scope 1 at $DIR/sum.rs:36:14: 36:17
+        StorageLive(_3);                 // scope 1 at $DIR/sum.rs:36:14: 36:17
+        _3 = _1;                         // scope 1 at $DIR/sum.rs:36:14: 36:17
+        StorageLive(_11);                // scope 4 at $DIR/sum.rs:36:14: 36:17
+        _11 = _3;                        // scope 4 at $DIR/sum.rs:36:14: 36:17
+        StorageLive(_12);                // scope 5 at $DIR/sum.rs:36:14: 36:17
+        _12 = _11;                       // scope 5 at $DIR/sum.rs:36:14: 36:17
+        _2 = std::slice::Iter::<f32>::new(move _12) -> bb5; // scope 5 at $DIR/sum.rs:36:14: 36:17
+                                         // mir::Constant
+                                         // + span: $DIR/sum.rs:36:14: 36:17
+                                         // + user_ty: UserType(0)
+                                         // + literal: Const { ty: fn(&[f32]) -> std::slice::Iter<f32> {std::slice::Iter::<f32>::new}, val: Value(Scalar(<ZST>)) }
+    }
+
+    bb1: {
+        StorageLive(_5);                 // scope 2 at $DIR/sum.rs:36:14: 36:17
+        StorageLive(_6);                 // scope 2 at $DIR/sum.rs:36:14: 36:17
+        StorageLive(_7);                 // scope 2 at $DIR/sum.rs:36:14: 36:17
+        _7 = &mut _4;                    // scope 2 at $DIR/sum.rs:36:14: 36:17
+        _6 = &mut (*_7);                 // scope 2 at $DIR/sum.rs:36:14: 36:17
+        _5 = <std::slice::Iter<f32> as Iterator>::next(move _6) -> bb2; // scope 2 at $DIR/sum.rs:36:14: 36:17
+                                         // mir::Constant
+                                         // + span: $DIR/sum.rs:36:14: 36:17
+                                         // + literal: Const { ty: for<'r> fn(&'r mut std::slice::Iter<f32>) -> std::option::Option<<std::slice::Iter<f32> as std::iter::Iterator>::Item> {<std::slice::Iter<f32> as std::iter::Iterator>::next}, val: Value(Scalar(<ZST>)) }
+    }
+
+    bb2: {
+        StorageDead(_6);                 // scope 2 at $DIR/sum.rs:36:16: 36:17
+        _8 = discriminant(_5);           // scope 2 at $DIR/sum.rs:36:14: 36:17
+        switchInt(move _8) -> [0_isize: bb4, otherwise: bb3]; // scope 2 at $DIR/sum.rs:36:14: 36:17
+    }
+
+    bb3: {
+        StorageLive(_9);                 // scope 2 at $DIR/sum.rs:36:9: 36:10
+        _9 = ((_5 as Some).0: &f32);     // scope 2 at $DIR/sum.rs:36:9: 36:10
+        StorageLive(_10);                // scope 3 at $DIR/sum.rs:37:16: 37:18
+        _10 = (*_9);                     // scope 3 at $DIR/sum.rs:37:16: 37:18
+        _0 = Add(_0, move _10);          // scope 3 at $DIR/sum.rs:37:9: 37:18
+        StorageDead(_10);                // scope 3 at $DIR/sum.rs:37:17: 37:18
+        StorageDead(_9);                 // scope 2 at $DIR/sum.rs:38:5: 38:6
+        StorageDead(_7);                 // scope 2 at $DIR/sum.rs:38:5: 38:6
+        StorageDead(_5);                 // scope 2 at $DIR/sum.rs:38:5: 38:6
+        goto -> bb1;                     // scope 2 at $DIR/sum.rs:36:5: 38:6
+    }
+
+    bb4: {
+        StorageDead(_7);                 // scope 2 at $DIR/sum.rs:38:5: 38:6
+        StorageDead(_5);                 // scope 2 at $DIR/sum.rs:38:5: 38:6
+        StorageDead(_4);                 // scope 1 at $DIR/sum.rs:38:5: 38:6
+        StorageDead(_2);                 // scope 1 at $DIR/sum.rs:38:5: 38:6
+        return;                          // scope 0 at $DIR/sum.rs:40:2: 40:2
+    }
+
+    bb5: {
+        StorageDead(_12);                // scope 5 at $DIR/sum.rs:36:14: 36:17
+        StorageDead(_11);                // scope 4 at $DIR/sum.rs:36:14: 36:17
+        StorageDead(_3);                 // scope 1 at $DIR/sum.rs:36:16: 36:17
+        StorageLive(_4);                 // scope 1 at $DIR/sum.rs:36:14: 36:17
+        _4 = move _2;                    // scope 1 at $DIR/sum.rs:36:14: 36:17
+        goto -> bb1;                     // scope 2 at $DIR/sum.rs:36:5: 38:6
+    }
+}

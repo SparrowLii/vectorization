@@ -1,5 +1,6 @@
 use super::BackendTypes;
 use crate::mir::operand::OperandRef;
+use rustc_middle::ty::layout::TyAndLayout;
 use rustc_middle::ty::{self, Ty};
 use rustc_span::{Span, Symbol};
 use rustc_target::abi::call::FnAbi;
@@ -21,6 +22,7 @@ pub trait IntrinsicCallMethods<'tcx>: BackendTypes {
         &mut self,
         func: Symbol,
         args: &[OperandRef<'tcx, Self::Value>],
+        ret_ty: TyAndLayout<'tcx>,
         llresult: Self::Value,
         span: Span,
     );

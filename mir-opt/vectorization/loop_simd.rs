@@ -46,4 +46,3 @@ fn func2(len: usize) -> f32 {
     }
     sum
 }
-

@@ -29,22 +29,22 @@ fn hex_encode(_1: &[u8], _2: &mut [u8]) -> () {
     let mut _27: usize;                  // in scope 0 at $DIR/hex_encode.rs:43:9: 43:17
     let mut _28: bool;                   // in scope 0 at $DIR/hex_encode.rs:43:9: 43:17
     let mut _31: usize;                  // in scope 0 at no-location
-    let mut _32: [u8; 16];               // in scope 0 at no-location
-    let mut _33: [u8; 16];               // in scope 0 at no-location
-    let mut _34: [u8; 16];               // in scope 0 at no-location
-    let mut _35: [u8; 16];               // in scope 0 at no-location
-    let mut _36: [u8; 16];               // in scope 0 at no-location
-    let mut _37: usize;                  // in scope 0 at no-location
-    let mut _38: bool;                   // in scope 0 at no-location
-    let mut _39: [&u8; 16];              // in scope 0 at no-location
-    let mut _40: [&mut [u8]; 16];        // in scope 0 at no-location
+    let mut _32: [&u8; 32];              // in scope 0 at no-location
+    let mut _33: [&mut [u8]; 32];        // in scope 0 at no-location
+    let mut _34: [u8; 32];               // in scope 0 at no-location
+    let mut _35: [u8; 32];               // in scope 0 at no-location
+    let mut _36: [u8; 32];               // in scope 0 at no-location
+    let mut _37: [u8; 32];               // in scope 0 at no-location
+    let mut _38: [u8; 32];               // in scope 0 at no-location
+    let mut _39: usize;                  // in scope 0 at no-location
+    let mut _40: bool;                   // in scope 0 at no-location
     let mut _41: usize;                  // in scope 0 at no-location
     let mut _42: bool;                   // in scope 0 at no-location
-    let mut _43: [u8; 16];               // in scope 0 at no-location
-    let mut _44: [u8; 16];               // in scope 0 at no-location
+    let mut _43: [u8; 32];               // in scope 0 at no-location
+    let mut _44: [u8; 32];               // in scope 0 at no-location
     let mut _45: usize;                  // in scope 0 at no-location
     let mut _46: bool;                   // in scope 0 at no-location
-    let mut _47: [u8; 16];               // in scope 0 at no-location
+    let mut _47: [u8; 32];               // in scope 0 at no-location
     let mut _48: usize;                  // in scope 0 at no-location
     let mut _49: bool;                   // in scope 0 at no-location
     let mut _50: usize;                  // in scope 0 at no-location
@@ -131,9 +131,9 @@ fn hex_encode(_1: &[u8], _2: &mut [u8]) -> () {
     }
 
     bb6: {
-        _37 = _31;                       // scope 0 at no-location
-        _38 = Ge(move _37, const 16_usize); // scope 0 at no-location
-        switchInt(move _38) -> [false: bb7, otherwise: bb10]; // scope 0 at no-location
+        _39 = _31;                       // scope 0 at no-location
+        _40 = Ge(move _39, const 32_usize); // scope 0 at no-location
+        switchInt(move _40) -> [false: bb7, otherwise: bb10]; // scope 0 at no-location
     }
 
     bb7: {
@@ -158,8 +158,8 @@ fn hex_encode(_1: &[u8], _2: &mut [u8]) -> () {
     }
 
     bb9: {
-        _39[_31] = (((_10 as Some).0: (&u8, &mut [u8])).0: &u8); // scope 0 at no-location
-        _40[_31] = move (((_10 as Some).0: (&u8, &mut [u8])).1: &mut [u8]); // scope 0 at no-location
+        _32[_31] = (((_10 as Some).0: (&u8, &mut [u8])).0: &u8); // scope 0 at no-location
+        _33[_31] = move (((_10 as Some).0: (&u8, &mut [u8])).1: &mut [u8]); // scope 0 at no-location
         StorageDead(_10);                // scope 1 at $DIR/hex_encode.rs:44:5: 44:6
         _31 = Add(_31, const 1_usize);   // scope 0 at no-location
         goto -> bb6;                     // scope 0 at no-location
@@ -178,25 +178,25 @@ fn hex_encode(_1: &[u8], _2: &mut [u8]) -> () {
 
     bb11: {
         _41 = _31;                       // scope 0 at no-location
-        _42 = Ge(move _41, const 16_usize); // scope 0 at no-location
+        _42 = Ge(move _41, const 32_usize); // scope 0 at no-location
         switchInt(move _42) -> [false: bb12, otherwise: bb13]; // scope 0 at no-location
     }
 
     bb12: {
-        _33[_31] = (*_39[_31]);          // scope 0 at no-location
+        _35[_31] = (*_32[_31]);          // scope 0 at no-location
         _31 = Add(_31, const 1_usize);   // scope 0 at no-location
         goto -> bb11;                    // scope 0 at no-location
     }
 
     bb13: {
-        _43 = [const 4_u8; 16];          // scope 0 at no-location
-        _32 = "simd_shr"(move _33, move _43) -> bb14; // scope 0 at no-location
+        _43 = [const 4_u8; 32];          // scope 0 at no-location
+        _34 = "simd_shr"(move _35, move _43) -> bb14; // scope 0 at no-location
     }
 
     bb14: {
         StorageDead(_19);                // scope 0 at no-location
-        _44 = [const 15_u8; 16];         // scope 0 at no-location
-        _34 = "simd_and"(move _32, move _44) -> bb15; // scope 0 at no-location
+        _44 = [const 15_u8; 32];         // scope 0 at no-location
+        _36 = "simd_and"(move _34, move _44) -> bb15; // scope 0 at no-location
     }
 
     bb15: {
@@ -211,12 +211,12 @@ fn hex_encode(_1: &[u8], _2: &mut [u8]) -> () {
 
     bb16: {
         _45 = _31;                       // scope 0 at no-location
-        _46 = Ge(move _45, const 16_usize); // scope 0 at no-location
+        _46 = Ge(move _45, const 32_usize); // scope 0 at no-location
         switchInt(move _46) -> [false: bb17, otherwise: bb20]; // scope 0 at no-location
     }
 
     bb17: {
-        _17 = _34[_31];                  // scope 0 at no-location
+        _17 = _36[_31];                  // scope 0 at no-location
         _16 = hex_encode::hex(move _17) -> bb18; // scope 0 at no-location
                                          // mir::Constant
                                          // + span: $DIR/hex_encode.rs:42:20: 42:23
@@ -225,14 +225,14 @@ fn hex_encode(_1: &[u8], _2: &mut [u8]) -> () {
 
     bb18: {
         _20 = const 0_usize;             // scope 0 at no-location
-        _21 = Len((*_40[_31]));          // scope 0 at no-location
+        _21 = Len((*_33[_31]));          // scope 0 at no-location
         _22 = Lt(const 0_usize, _21);    // scope 0 at no-location
         assert(move _22, "index out of bounds: the length is {} but the index is {}", move _21, const 0_usize) -> bb19; // scope 0 at no-location
     }
 
     bb19: {
-        (*_40[_31])[_20] = move _16;     // scope 0 at no-location
-        _36[_31] = (*_39[_31]);          // scope 0 at no-location
+        (*_33[_31])[_20] = move _16;     // scope 0 at no-location
+        _38[_31] = (*_32[_31]);          // scope 0 at no-location
         _31 = Add(_31, const 1_usize);   // scope 0 at no-location
         goto -> bb16;                    // scope 0 at no-location
     }
@@ -241,8 +241,8 @@ fn hex_encode(_1: &[u8], _2: &mut [u8]) -> () {
         StorageDead(_20);                // scope 0 at no-location
         StorageDead(_16);                // scope 0 at no-location
         StorageDead(_17);                // scope 0 at no-location
-        _47 = [const 15_u8; 16];         // scope 0 at no-location
-        _35 = "simd_and"(move _36, move _47) -> bb21; // scope 0 at no-location
+        _47 = [const 15_u8; 32];         // scope 0 at no-location
+        _37 = "simd_and"(move _38, move _47) -> bb21; // scope 0 at no-location
     }
 
     bb21: {
@@ -254,12 +254,12 @@ fn hex_encode(_1: &[u8], _2: &mut [u8]) -> () {
 
     bb22: {
         _48 = _31;                       // scope 0 at no-location
-        _49 = Ge(move _48, const 16_usize); // scope 0 at no-location
+        _49 = Ge(move _48, const 32_usize); // scope 0 at no-location
         switchInt(move _49) -> [false: bb23, otherwise: bb26]; // scope 0 at no-location
     }
 
     bb23: {
-        _24 = _35[_31];                  // scope 0 at no-location
+        _24 = _37[_31];                  // scope 0 at no-location
         _23 = hex_encode::hex(move _24) -> bb24; // scope 0 at no-location
                                          // mir::Constant
                                          // + span: $DIR/hex_encode.rs:43:20: 43:23
@@ -268,13 +268,13 @@ fn hex_encode(_1: &[u8], _2: &mut [u8]) -> () {
 
     bb24: {
         _26 = const 1_usize;             // scope 0 at no-location
-        _27 = Len((*_40[_31]));          // scope 0 at no-location
+        _27 = Len((*_33[_31]));          // scope 0 at no-location
         _28 = Lt(const 1_usize, _27);    // scope 0 at no-location
         assert(move _28, "index out of bounds: the length is {} but the index is {}", move _27, const 1_usize) -> bb25; // scope 0 at no-location
     }
 
     bb25: {
-        (*_40[_31])[_26] = move _23;     // scope 0 at no-location
+        (*_33[_31])[_26] = move _23;     // scope 0 at no-location
         _31 = Add(_31, const 1_usize);   // scope 0 at no-location
         goto -> bb22;                    // scope 0 at no-location
     }
@@ -308,7 +308,7 @@ fn hex_encode(_1: &[u8], _2: &mut [u8]) -> () {
         StorageLive(_17);                // scope 0 at no-location
         StorageLive(_18);                // scope 0 at no-location
         StorageLive(_19);                // scope 0 at no-location
-        _19 = (*_39[_50]);               // scope 0 at no-location
+        _19 = (*_32[_50]);               // scope 0 at no-location
         _18 = Shr(move _19, const 4_i32); // scope 0 at no-location
         StorageDead(_19);                // scope 0 at no-location
         _17 = BitAnd(move _18, const 15_u8); // scope 0 at no-location
@@ -323,19 +323,19 @@ fn hex_encode(_1: &[u8], _2: &mut [u8]) -> () {
         StorageDead(_17);                // scope 0 at no-location
         StorageLive(_20);                // scope 0 at no-location
         _20 = const 0_usize;             // scope 0 at no-location
-        _21 = Len((*_40[_50]));          // scope 0 at no-location
+        _21 = Len((*_33[_50]));          // scope 0 at no-location
         _22 = Lt(const 0_usize, _21);    // scope 0 at no-location
         assert(move _22, "index out of bounds: the length is {} but the index is {}", move _21, const 0_usize) -> bb31; // scope 0 at no-location
     }
 
     bb31: {
-        (*_40[_50])[_20] = move _16;     // scope 0 at no-location
+        (*_33[_50])[_20] = move _16;     // scope 0 at no-location
         StorageDead(_16);                // scope 0 at no-location
         StorageDead(_20);                // scope 0 at no-location
         StorageLive(_23);                // scope 0 at no-location
         StorageLive(_24);                // scope 0 at no-location
         StorageLive(_25);                // scope 0 at no-location
-        _25 = (*_39[_50]);               // scope 0 at no-location
+        _25 = (*_32[_50]);               // scope 0 at no-location
         _24 = BitAnd(move _25, const 15_u8); // scope 0 at no-location
         StorageDead(_25);                // scope 0 at no-location
         _23 = hex_encode::hex(move _24) -> bb32; // scope 0 at no-location
@@ -348,13 +348,13 @@ fn hex_encode(_1: &[u8], _2: &mut [u8]) -> () {
         StorageDead(_24);                // scope 0 at no-location
         StorageLive(_26);                // scope 0 at no-location
         _26 = const 1_usize;             // scope 0 at no-location
-        _27 = Len((*_40[_50]));          // scope 0 at no-location
+        _27 = Len((*_33[_50]));          // scope 0 at no-location
         _28 = Lt(const 1_usize, _27);    // scope 0 at no-location
         assert(move _28, "index out of bounds: the length is {} but the index is {}", move _27, const 1_usize) -> bb33; // scope 0 at no-location
     }
 
     bb33: {
-        (*_40[_50])[_26] = move _23;     // scope 0 at no-location
+        (*_33[_50])[_26] = move _23;     // scope 0 at no-location
         StorageDead(_23);                // scope 0 at no-location
         StorageDead(_26);                // scope 0 at no-location
         StorageDead(_15);                // scope 0 at no-location

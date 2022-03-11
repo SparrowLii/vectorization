@@ -920,12 +920,22 @@ impl<'a, 'tcx, Bx: BuilderMethods<'a, 'tcx>> FunctionCx<'a, 'tcx, Bx> {
         let args: Vec<_> = args.iter().map(|arg| self.codegen_operand(&mut bx, arg)).collect();
 
         let ret_ly = match func {
-            sym::simd_fsqrt | sym::simd_shr | sym::simd_and | sym::simd_add | sym::simd_mul => args[0].layout,
+            sym::simd_fsqrt | sym::simd_shr | sym::simd_and | sym::simd_add | sym::simd_mul => {
+                args[0].layout
+            }
             sym::simd_reduce_add_unordered => {
                 if let ty::Array(ele_ty, _) = args[0].layout.ty.kind() {
                     bx.cx().layout_of(ele_ty)
                 } else {
                     bug!("non vector type: {:?}", args[0])
+                }
+            }
+            sym::simd_cast => {
+                let des = destination.unwrap().0.local;
+                if let LocalRef::Place(p_ref) = self.locals[des] {
+                    p_ref.layout
+                } else {
+                    unimplemented!("cannot get layout of return value")
                 }
             }
             _ => unimplemented!("{:?} is not supported in vectorization now", func),
@@ -949,7 +959,7 @@ impl<'a, 'tcx, Bx: BuilderMethods<'a, 'tcx>> FunctionCx<'a, 'tcx, Bx> {
             _ => bug!("wrong return dest"),
         };
 
-        bx.codegen_vector_func(func, &args, dest, span);
+        bx.codegen_vector_func(func, &args, ret_ly, dest, span);
 
         if let ReturnDest::IndirectOperand(dst, _) = ret_dest {
             self.store_return(&mut bx, ret_dest, &ret_abi, dst.llval);

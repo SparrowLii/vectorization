@@ -8,14 +8,14 @@ fn func1(_1: usize) -> f32 {
     let mut _5: usize;                   // in scope 0 at $DIR/loop_simd.rs:28:21: 28:24
     let mut _6: f32;                     // in scope 0 at $DIR/loop_simd.rs:31:16: 31:37
     let mut _7: f32;                     // in scope 0 at $DIR/loop_simd.rs:31:16: 31:30
-    let mut _9: usize;                   // in scope 0 at no-location
-    let mut _10: [f32; 32];              // in scope 0 at no-location
-    let mut _11: [f32; 32];              // in scope 0 at no-location
+    let mut _8: usize;                   // in scope 0 at $DIR/loop_simd.rs:31:17: 31:22
+    let mut _10: usize;                  // in scope 0 at no-location
+    let mut _11: [usize; 32];            // in scope 0 at no-location
     let mut _12: [f32; 32];              // in scope 0 at no-location
     let mut _13: [f32; 32];              // in scope 0 at no-location
-    let mut _14: usize;                  // in scope 0 at no-location
-    let mut _15: bool;                   // in scope 0 at no-location
-    let mut _16: [usize; 32];            // in scope 0 at no-location
+    let mut _14: [f32; 32];              // in scope 0 at no-location
+    let mut _15: usize;                  // in scope 0 at no-location
+    let mut _16: bool;                   // in scope 0 at no-location
     let mut _17: usize;                  // in scope 0 at no-location
     let mut _18: bool;                   // in scope 0 at no-location
     let mut _19: usize;                  // in scope 0 at no-location
@@ -29,7 +29,7 @@ fn func1(_1: usize) -> f32 {
             debug sum => _0;             // in scope 2 at $DIR/loop_simd.rs:26:9: 26:16
             scope 3 (inlined f32::<impl f32>::sqrt) { // at $DIR/loop_simd.rs:31:16: 31:37
                 debug self => _7;        // in scope 3 at $DIR/loop_simd.rs:31:16: 31:37
-                let mut _8: f32;         // in scope 3 at $DIR/loop_simd.rs:31:16: 31:37
+                let mut _9: f32;         // in scope 3 at $DIR/loop_simd.rs:31:16: 31:37
                 scope 4 {
                 }
             }
@@ -40,7 +40,7 @@ fn func1(_1: usize) -> f32 {
         StorageLive(_2);                 // scope 0 at $DIR/loop_simd.rs:25:9: 25:18
         _2 = const 0_usize;              // scope 0 at $DIR/loop_simd.rs:25:21: 25:22
         _0 = const 0f32;                 // scope 1 at $DIR/loop_simd.rs:26:24: 26:26
-        _12 = [const 0f32; 32];          // scope 0 at no-location
+        _14 = [const 0f32; 32];          // scope 0 at no-location
         goto -> bb2;                     // scope 2 at $DIR/loop_simd.rs:27:5: 33:6
     }
 
@@ -51,14 +51,14 @@ fn func1(_1: usize) -> f32 {
     }
 
     bb2: {
-        _9 = const 0_usize;              // scope 0 at no-location
+        _10 = const 0_usize;             // scope 0 at no-location
         goto -> bb3;                     // scope 0 at no-location
     }
 
     bb3: {
-        _14 = _9;                        // scope 0 at no-location
-        _15 = Ge(move _14, const 32_usize); // scope 0 at no-location
-        switchInt(move _15) -> [false: bb4, otherwise: bb6]; // scope 0 at no-location
+        _15 = _10;                       // scope 0 at no-location
+        _16 = Ge(move _15, const 32_usize); // scope 0 at no-location
+        switchInt(move _16) -> [false: bb4, otherwise: bb6]; // scope 0 at no-location
     }
 
     bb4: {
@@ -75,41 +75,43 @@ fn func1(_1: usize) -> f32 {
 
     bb5: {
         StorageDead(_3);                 // scope 2 at $DIR/loop_simd.rs:30:9: 30:10
-        _16[_9] = _2;                    // scope 0 at no-location
+        _11[_10] = _2;                   // scope 0 at no-location
         _2 = Add(_2, const 1_usize);     // scope 0 at no-location
-        _9 = Add(_9, const 1_usize);     // scope 0 at no-location
+        _10 = Add(_10, const 1_usize);   // scope 0 at no-location
         goto -> bb3;                     // scope 0 at no-location
     }
 
     bb6: {
         StorageLive(_6);                 // scope 0 at no-location
         StorageLive(_7);                 // scope 0 at no-location
-        _9 = const 0_usize;              // scope 0 at no-location
+        StorageLive(_8);                 // scope 0 at no-location
+        StorageLive(_9);                 // scope 0 at no-location
+        _10 = const 0_usize;             // scope 0 at no-location
         goto -> bb7;                     // scope 0 at no-location
     }
 
     bb7: {
-        _17 = _9;                        // scope 0 at no-location
+        _17 = _10;                       // scope 0 at no-location
         _18 = Ge(move _17, const 32_usize); // scope 0 at no-location
         switchInt(move _18) -> [false: bb8, otherwise: bb9]; // scope 0 at no-location
     }
 
     bb8: {
-        _13[_9] = move _16[_9] as f32 (Misc); // scope 0 at no-location
-        _9 = Add(_9, const 1_usize);     // scope 0 at no-location
+        _7 = move _11[_10] as f32 (Misc); // scope 0 at no-location
+        _13[_10] = _7;                   // scope 0 at no-location
+        _10 = Add(_10, const 1_usize);   // scope 0 at no-location
         goto -> bb7;                     // scope 0 at no-location
     }
 
     bb9: {
-        StorageLive(_8);                 // scope 0 at no-location
-        _11 = _13;                       // scope 0 at no-location
-        _10 = "simd_fsqrt"(move _11) -> bb10; // scope 0 at no-location
+        StorageDead(_8);                 // scope 0 at no-location
+        _12 = "simd_fsqrt"(move _13) -> bb10; // scope 0 at no-location
     }
 
     bb10: {
-        StorageDead(_8);                 // scope 0 at no-location
+        StorageDead(_9);                 // scope 0 at no-location
         StorageDead(_7);                 // scope 0 at no-location
-        _12 = "simd_add"(_12, move _10) -> bb11; // scope 0 at no-location
+        _14 = "simd_add"(_14, move _12) -> bb11; // scope 0 at no-location
     }
 
     bb11: {
@@ -118,7 +120,7 @@ fn func1(_1: usize) -> f32 {
     }
 
     bb12: {
-        _0 = "simd_reduce_add_unordered"(move _12) -> bb13; // scope 0 at no-location
+        _0 = "simd_reduce_add_unordered"(move _14) -> bb13; // scope 0 at no-location
     }
 
     bb13: {
@@ -128,7 +130,7 @@ fn func1(_1: usize) -> f32 {
 
     bb14: {
         _20 = _19;                       // scope 0 at no-location
-        _21 = _9;                        // scope 0 at no-location
+        _21 = _10;                       // scope 0 at no-location
         _22 = Ge(move _20, move _21);    // scope 0 at no-location
         switchInt(move _22) -> [false: bb15, otherwise: bb1]; // scope 0 at no-location
     }
@@ -136,17 +138,19 @@ fn func1(_1: usize) -> f32 {
     bb15: {
         StorageLive(_6);                 // scope 0 at no-location
         StorageLive(_7);                 // scope 0 at no-location
-        _7 = move _16[_19] as f32 (Misc); // scope 0 at no-location
         StorageLive(_8);                 // scope 0 at no-location
-        _8 = _7;                         // scope 0 at no-location
-        _6 = sqrtf32(move _8) -> bb16;   // scope 0 at no-location
+        _7 = move _11[_19] as f32 (Misc); // scope 0 at no-location
+        StorageDead(_8);                 // scope 0 at no-location
+        StorageLive(_9);                 // scope 0 at no-location
+        _9 = _7;                         // scope 0 at no-location
+        _6 = sqrtf32(move _9) -> bb16;   // scope 0 at no-location
                                          // mir::Constant
                                          // + span: $DIR/loop_simd.rs:31:16: 31:37
                                          // + literal: Const { ty: unsafe extern "rust-intrinsic" fn(f32) -> f32 {std::intrinsics::sqrtf32}, val: Value(Scalar(<ZST>)) }
     }
 
     bb16: {
-        StorageDead(_8);                 // scope 0 at no-location
+        StorageDead(_9);                 // scope 0 at no-location
         StorageDead(_7);                 // scope 0 at no-location
         _0 = Add(_0, move _6);           // scope 0 at no-location
         StorageDead(_6);                 // scope 0 at no-location

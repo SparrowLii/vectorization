@@ -1485,11 +1485,7 @@ impl<'tcx> Visitor<'tcx> for EnsureGeneratorFieldAssignmentsNeverAlias<'_> {
                 });
             }
 
-            TerminatorKind::VectorFunc {
-                func: _,
-                args,
-                destination: Some((dest, _)),
-            } => {
+            TerminatorKind::VectorFunc { func: _, args, destination: Some((dest, _)) } => {
                 self.check_assigned_place(*dest, |this| {
                     for arg in args {
                         this.visit_operand(arg, location);

@@ -1597,7 +1597,7 @@ impl<'a, 'tcx> TypeChecker<'a, 'tcx> {
 
                 self.check_call_inputs(body, term, &sig, args, term_location, from_hir_call);
             }
-            TerminatorKind::VectorFunc { func: _, ref args, destination: _} => {
+            TerminatorKind::VectorFunc { func: _, ref args, destination: _ } => {
                 for arg in args {
                     self.check_operand(arg, term_location);
                 }

@@ -769,11 +769,7 @@ impl<'cx, 'tcx> rustc_mir_dataflow::ResultsVisitor<'cx, 'tcx> for MirBorrowckCtx
                     self.mutate_place(loc, (dest, span), Deep, JustWrite, flow_state);
                 }
             }
-            TerminatorKind::VectorFunc {
-                func: _,
-                ref args,
-                ref destination,
-            } => {
+            TerminatorKind::VectorFunc { func: _, ref args, ref destination } => {
                 for arg in args {
                     self.consume_operand(loc, (arg, span), flow_state);
                 }

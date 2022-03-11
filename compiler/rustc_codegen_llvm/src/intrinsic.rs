@@ -15,7 +15,7 @@ use rustc_codegen_ssa::mir::operand::OperandRef;
 use rustc_codegen_ssa::mir::place::PlaceRef;
 use rustc_codegen_ssa::traits::*;
 use rustc_hir as hir;
-use rustc_middle::ty::layout::{FnAbiOf, HasTyCtxt, LayoutOf, PrimitiveExt};
+use rustc_middle::ty::layout::{FnAbiOf, HasTyCtxt, LayoutOf, PrimitiveExt, TyAndLayout};
 use rustc_middle::ty::{self, Ty};
 use rustc_middle::{bug, span_bug};
 use rustc_span::{sym, symbol::kw, Span, Symbol, DUMMY_SP};
@@ -390,6 +390,7 @@ impl<'ll, 'tcx> IntrinsicCallMethods<'tcx> for Builder<'_, 'll, 'tcx> {
         &mut self,
         func: Symbol,
         args: &[OperandRef<'tcx, &'ll Value>],
+        ret_ly: TyAndLayout<'tcx>,
         llresult: &'ll Value,
         span: Span,
     ) {
@@ -401,14 +402,30 @@ impl<'ll, 'tcx> IntrinsicCallMethods<'tcx> for Builder<'_, 'll, 'tcx> {
             | sym::simd_and
             | sym::simd_shr
             | sym::simd_add
-            | sym::simd_mul => match args[0].layout.abi {
+            | sym::simd_mul
+            | sym::simd_cast => match args[0].layout.abi {
                 Vector { element, count } => (element.value.to_ty(self.tcx), count),
                 _ => bug!("wrong vector layout: {:?} for {:?}", args[0].layout, args[0]),
             },
             _ => unimplemented!("{:?} is not supported in vectorization now", func),
         };
 
+        let llret_ty = ret_ly.llvm_type(self);
         let llval = match func {
+            sym::simd_cast => {
+                let (out_elem, _out_len) = match ret_ly.layout.abi {
+                    Vector { element, count } => (element.value.to_ty(self.tcx), count),
+                    _ => bug!("wrong vector layout: {:?} for {:?}", ret_ly.layout, ret_ly.ty),
+                };
+
+                if elem_ty == self.tcx.types.u8 && out_elem == self.tcx.types.u32 {
+                    self.zext(args[0].immediate(), llret_ty)
+                } else if elem_ty == self.tcx.types.u64 && out_elem == self.tcx.types.u8 {
+                    self.trunc(args[0].immediate(), llret_ty)
+                } else {
+                    unimplemented!("unimplemented element ty: {:?} and {:?}", elem_ty, out_elem)
+                }
+            }
             sym::simd_fsqrt => {
                 let elem_ll_ty = if elem_ty == self.tcx.types.f32 {
                     self.cx.type_f32()
@@ -441,7 +458,7 @@ impl<'ll, 'tcx> IntrinsicCallMethods<'tcx> for Builder<'_, 'll, 'tcx> {
                 )
             }
             sym::simd_reduce_add_unordered => {
-                if elem_ty == self.tcx.types.u8 {
+                if elem_ty == self.tcx.types.u8 || elem_ty == self.tcx.types.u32 {
                     self.vector_reduce_add(args[0].immediate())
                 } else {
                     let acc = if elem_ty == self.tcx.types.f32 {
@@ -473,17 +490,6 @@ impl<'ll, 'tcx> IntrinsicCallMethods<'tcx> for Builder<'_, 'll, 'tcx> {
             _ => unimplemented!("{:?} is not supported in vectorization now", func),
         };
 
-        let ret_ly = match func {
-            sym::simd_fsqrt | sym::simd_and | sym::simd_shr | sym::simd_add | sym::simd_mul => args[0].layout,
-            sym::simd_reduce_add_unordered => {
-                if let ty::Array(ele_ty, _) = args[0].layout.ty.kind() {
-                    self.cx.layout_of(ele_ty)
-                } else {
-                    bug!("non vector type: {:?}", args[0])
-                }
-            }
-            _ => unimplemented!("{:?} is not supported in vectorization now", func),
-        };
         let result = PlaceRef::new_sized(llresult, ret_ly);
 
         OperandRef::from_immediate_or_packed_pair(self, llval, result.layout)

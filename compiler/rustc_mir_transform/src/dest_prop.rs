@@ -615,11 +615,7 @@ impl<'a> Conflicts<'a> {
                     }
                 }
             }
-            TerminatorKind::VectorFunc {
-                func: _,
-                args,
-                destination: Some((dest_place, _)),
-            } => {
+            TerminatorKind::VectorFunc { func: _, args, destination: Some((dest_place, _)) } => {
                 // No arguments may overlap with the destination.
                 for arg in args.iter() {
                     if let Some(place) = arg.place() {

@@ -12,7 +12,7 @@ use rustc_middle::mir::BinOp;
 use rustc_middle::mir::StatementKind::*;
 use rustc_middle::mir::TerminatorKind::*;
 use rustc_middle::mir::*;
-use rustc_middle::ty::{self, Const, TyCtxt};
+use rustc_middle::ty::{self, Const, Ty, TyCtxt, TypeAndMut};
 use rustc_span::symbol::sym;
 use rustc_span::{Symbol, DUMMY_SP};
 use std::io::{self, Write};
@@ -35,7 +35,10 @@ pub struct VectorResolver<'tcx> {
     loop_stmts: Vec<ExtraStmt<'tcx>>,
 
     temp_to_vector: FxHashMap<Local, Local>,
+    no_read_after_vector: FxHashMap<Place<'tcx>, Local>,
+    no_reset_after_vector: FxHashMap<Place<'tcx>, Local>,
     condi_vector: FxHashSet<Local>,
+    range_condi: FxHashSet<Local>,
 
     resolved_stmts_pre: Vec<VectorStmt<'tcx>>,
     resolved_stmts: Vec<VectorStmt<'tcx>>,
@@ -55,9 +58,8 @@ enum ExtraStmt<'tcx> {
     CondiGet(Place<'tcx>, Rvalue<'tcx>, BitSet<Local>),
     CondiSet(Place<'tcx>, Rvalue<'tcx>, BitSet<Local>),
 
-    PreGet(Place<'tcx>, Rvalue<'tcx>, BitSet<Local>),
-    AfterGet(Place<'tcx>, Rvalue<'tcx>, BitSet<Local>),
-    AfterSet(Place<'tcx>, Rvalue<'tcx>, BitSet<Local>),
+    AfterGet(Place<'tcx>, Rvalue<'tcx>, BitSet<Local>, Location),
+    AfterSet(Place<'tcx>, Rvalue<'tcx>, BitSet<Local>, Location),
 
     TempStorage(Location),
     TempAssign(Place<'tcx>, Rvalue<'tcx>, BitSet<Local>, Location),
@@ -71,6 +73,7 @@ enum ExtraStmt<'tcx> {
     TempFuncTerminator(Location, Place<'tcx>, BitSet<Local>),
 
     OtherTerminator(Location),
+    ResumeAfter(Place<'tcx>),
 }
 
 impl ExtraStmt<'_> {
@@ -97,27 +100,6 @@ impl ExtraStmt<'_> {
             _ => false,
         }
     }
-
-    /*fn right_locals(&self) -> BitSet<Local> {
-        match self {
-            CondiStorage(..)
-            | CondiGet(..)
-            | CondiSet(..)
-            | SetCondiTerminator(..)
-            | GetCondiTerminator(..)
-            | BreakTerminator(..) => bug("shouldn't get locals of {:?}", self),
-
-            PreGet(_, _, bitset)
-            | AfterGet(_, _, bitset)
-            | AfterSet(_, _, bitset)
-            | TempAssign(_, _, bitset, _)
-            | TempFuncTerminator(_, _, bitset) => bitset.clone(),
-
-            TempStorage(_) | GotoTerminator(_) | EndLoopTerminator(_) | OtherTerminator(_) => {
-                BitSet::new_empty(0)
-            }
-        }
-    }*/
 
     fn move_up(&self, above: &Self) -> bool {
         match (self, above) {
@@ -190,10 +172,29 @@ impl<'tcx> MirPass<'tcx> for Vectorize {
             }
             writeln!(file)?;
 
+            writeln!(file, "iter condi:")?;
+            resolver.resolve_iter_condi(body, tcx);
+            for local in &resolver.range_condi {
+                writeln!(file, "{:?}", local)?;
+            }
+            writeln!(file)?;
+
             resolver.generate_blocks(tcx, body);
 
-            writeln!(file, "temp vectors:")?;
+            writeln!(file, "temp to vectors:")?;
             for (key, val) in resolver.temp_to_vector.iter() {
+                writeln!(file, "{:?} -> {:?}", key, val)?;
+            }
+            writeln!(file)?;
+
+            writeln!(file, "no read temp vectors:")?;
+            for (key, val) in resolver.no_read_after_vector.iter() {
+                writeln!(file, "{:?} -> {:?}", key, val)?;
+            }
+            writeln!(file)?;
+
+            writeln!(file, "no reset temp vectors:")?;
+            for (key, val) in resolver.no_reset_after_vector.iter() {
                 writeln!(file, "{:?} -> {:?}", key, val)?;
             }
             writeln!(file)?;
@@ -211,7 +212,7 @@ impl<'tcx> MirPass<'tcx> for Vectorize {
             writeln!(file)?;
         };
         simplify::remove_dead_blocks(tcx, body);
-        simplify::simplify_locals(body, tcx);
+        //simplify::simplify_locals(body, tcx);
     }
 }
 
@@ -220,8 +221,11 @@ enum VectorStmt<'tcx> {
     StraightStmt(Statement<'tcx>),
     StraightTerm(Terminator<'tcx>),
 
-    BinOpAfterSet(Place<'tcx>, BinOp, Operand<'tcx>, Operand<'tcx>, bool),
+    BinOpAfterSet(Place<'tcx>, BinOp, Operand<'tcx>, Operand<'tcx>),
     BinOpAssign(Place<'tcx>, BinOp, Operand<'tcx>, Operand<'tcx>),
+    Cast(Place<'tcx>, Operand<'tcx>, Ty<'tcx>),
+    ReadVector(Place<'tcx>, Place<'tcx>, Local),
+
     VectorTerm(Symbol, Vec<Operand<'tcx>>, Place<'tcx>),
 
     UseAssign(Place<'tcx>, Operand<'tcx>),
@@ -230,9 +234,10 @@ enum VectorStmt<'tcx> {
 }
 
 #[derive(Debug, Clone)]
-enum RemainStmt {
-    InitAfterVector(Local, BinOp),
-    SetAfterReduce(Local, BinOp),
+enum RemainStmt<'tcx> {
+    InitAfterVector(Place<'tcx>, BinOp),
+    SetAfterReduce(Place<'tcx>, BinOp),
+    DeadAfter(Local),
 }
 
 pub struct PlaceToVector<'tcx> {
@@ -407,9 +412,31 @@ impl<'tcx> VectorResolver<'tcx> {
         for local in self.conditions.iter() {
             self.locals_use[*local] = Condition;
         }
+        let mut changed = true;
+        while changed {
+            changed = false;
+            for bb in lp.iter() {
+                for stmt in &body[*bb].statements {
+                    match &stmt.kind {
+                        Assign(assign) => {
+                            let (place, rvalue) = assign.as_ref();
+                            if let Rvalue::Ref(_, BorrowKind::Mut { .. }, ref_place) = rvalue {
+                                if self.locals_use[ref_place.local] == AfterLoop
+                                    && self.locals_use[place.local] == InLoop
+                                {
+                                    changed = true;
+                                    self.locals_use[place.local] = AfterLoop;
+                                }
+                            }
+                        }
+                        _ => {}
+                    }
+                }
+            }
+        }
     }
 
-    fn resolve_stmts<'r>(&'r mut self, body: &Body<'tcx>) {
+    fn resolve_stmts<'r>(&'r mut self, body: &'r Body<'tcx>) {
         pub struct StmtResoler<'r, 'tcx> {
             r: &'r mut VectorResolver<'tcx>,
             current_use: LocalUse,
@@ -426,12 +453,7 @@ impl<'tcx> VectorResolver<'tcx> {
                             Condition => {
                                 self.r.loop_stmts.push(CondiStorage(location, self.locals.clone()))
                             }
-                            InLoop => self.r.loop_stmts.push(TempStorage(location)),
-                            _ => unimplemented!(
-                                "local {:?} is {:?}",
-                                local,
-                                self.r.locals_use[*local]
-                            ),
+                            _ => self.r.loop_stmts.push(TempStorage(location)),
                         }
                     }
                     Assign(assign) => {
@@ -466,7 +488,7 @@ impl<'tcx> VectorResolver<'tcx> {
                                     *place,
                                     rvalue.clone(),
                                     left_locals,
-                                ))
+                                ));
                             }
                             (InLoop, InLoop) => self.r.loop_stmts.push(TempAssign(
                                 *place,
@@ -474,20 +496,18 @@ impl<'tcx> VectorResolver<'tcx> {
                                 right_locals,
                                 location,
                             )),
-                            (InLoop, PreLoop) => {
-                                self.r.loop_stmts.push(PreGet(*place, rvalue.clone(), right_locals))
-                            }
-                            (InLoop, AfterLoop) => self.r.loop_stmts.push(AfterGet(
+                            (InLoop, PreLoop | AfterLoop) => self.r.loop_stmts.push(AfterGet(
                                 *place,
                                 rvalue.clone(),
                                 right_locals,
+                                location,
                             )),
-                            (AfterLoop, _) => self.r.loop_stmts.push(AfterSet(
+                            (PreLoop | AfterLoop, _) => self.r.loop_stmts.push(AfterSet(
                                 *place,
                                 rvalue.clone(),
                                 right_locals,
+                                location,
                             )),
-                            _ => unimplemented!("assign resolve fail on {:?}", location),
                         }
                     }
                     _ => unimplemented!("stmt resolve fail on {:?}", location),
@@ -546,7 +566,13 @@ impl<'tcx> VectorResolver<'tcx> {
                                     right_locals,
                                 ));
                             }
-                            _ => unimplemented!("call resolve fail on {:?}", location),
+                            _ => {
+                                unimplemented!(
+                                    "call resolve fail on {:?},\n mir: {:?}",
+                                    terminator.kind,
+                                    location
+                                )
+                            }
                         }
                     }
                     _ => {
@@ -569,6 +595,76 @@ impl<'tcx> VectorResolver<'tcx> {
         };
         for bb in stmt_resolver.r.loops[0].1.clone() {
             stmt_resolver.visit_basic_block_data(bb, &body[bb])
+        }
+    }
+
+    fn resolve_iter_condi<'r>(&'r mut self, body: &Body<'tcx>, tcx: TyCtxt<'tcx>) {
+        let mut changed = true;
+        while changed {
+            changed = false;
+            for stmt in &self.loop_stmts {
+                match stmt {
+                    SetCondiTerminator(location, _) => {
+                        if let Call {
+                            func,
+                            args,
+                            destination: Some(place),
+                            cleanup: _,
+                            from_hir_call: _,
+                            fn_span: _,
+                        } = &body[location.block].terminator().kind
+                        {
+                            let fn_ty = func.constant().unwrap().ty();
+                            let func_str = if let ty::FnDef(def_id, _) = fn_ty.kind() {
+                                tcx.def_path(*def_id).to_string_no_crate_verbose()
+                            } else {
+                                bug!("wrong func call")
+                            };
+                            if func_str.as_str() == "::iter::range::RangeIteratorImpl::spec_next" {
+                                if let ty::Ref(_, ty, _) = args[0].ty(body, tcx).kind() {
+                                    if let ty::Adt(adt, subs) = ty.kind() {
+                                        let range_name =
+                                            tcx.def_path(adt.did).to_string_no_crate_verbose();
+                                        if range_name == "::ops::range::Range" {
+                                            let item_type = subs[0].expect_ty();
+                                            if item_type == tcx.types.usize {
+                                                if self
+                                                    .range_condi
+                                                    .insert(place.0.as_local().unwrap())
+                                                {
+                                                    changed = true;
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    CondiSet(place, rvalue, _)
+                    | CondiGet(place, rvalue, _)
+                    | TempAssign(place, rvalue, _, _) => match rvalue {
+                        Rvalue::Discriminant(p) => {
+                            if self.range_condi.contains(&p.as_local().unwrap())
+                                && self.range_condi.insert(place.as_local().unwrap())
+                            {
+                                changed = true;
+                            }
+                        }
+                        Rvalue::Use(op) => {
+                            if let Some(p) = op.place() {
+                                if self.range_condi.contains(&p.local)
+                                    && self.range_condi.insert(place.as_local().unwrap())
+                                {
+                                    changed = true;
+                                }
+                            }
+                        }
+                        _ => {}
+                    },
+                    _ => {}
+                }
+            }
         }
     }
 
@@ -606,15 +702,44 @@ impl<'tcx> VectorResolver<'tcx> {
         (inner.to_vec(), vect.to_vec())
     }
 
-    fn get_vector(&self, temp: &Local) -> Option<Local> {
-        self.temp_to_vector.get(temp).map(|v| *v)
+    fn get_vector(&self, temp: &Place<'tcx>) -> Option<Local> {
+        if let Some(vec) = self.temp_to_vector.get(&temp.local) {
+            Some(*vec)
+        } else if let Some(vec) = self.no_read_after_vector.get(temp) {
+            Some(*vec)
+        } else if let Some(vec) = self.no_reset_after_vector.get(temp) {
+            Some(*vec)
+        } else {
+            None
+        }
     }
 
-    fn insert_vector(&mut self, temp: &Local, tcx: TyCtxt<'tcx>, body: &mut Body<'tcx>) -> bool {
+    fn insert_vector(
+        &mut self,
+        temp: &Local,
+        tcx: TyCtxt<'tcx>,
+        body: &mut Body<'tcx>,
+        is_condi: bool,
+    ) -> bool {
         if self.temp_to_vector.get(temp).is_some() {
             false
         } else {
-            let ty = body.local_decls[*temp].ty;
+            let mut ty = body.local_decls[*temp].ty;
+            if !self.condi_vector.contains(temp) {}
+            if !is_condi {
+                while !ty.is_primitive() {
+                    match ty.kind() {
+                        ty::Ref(_, ref_ty, _)
+                        | ty::RawPtr(ty::TypeAndMut { ty: ref_ty, mutbl: _ })
+                        | ty::Slice(ref_ty) => {
+                            ty = ref_ty.clone();
+                        }
+                        _ => {
+                            unimplemented!("not supported ty: {:?}", ty)
+                        }
+                    }
+                }
+            }
             let v = body
                 .local_decls
                 .push(LocalDecl::new(tcx.mk_array(ty, self.vector_len.unwrap()), DUMMY_SP));
@@ -733,7 +858,7 @@ impl<'tcx> VectorResolver<'tcx> {
                     }
                 }
                 CondiSet(place, rvalue, _)
-                | PreGet(place, rvalue, _)
+                | AfterGet(place, rvalue, _, _)
                 | TempAssign(place, rvalue, _, _) => {
                     body[block].statements.push(Statement {
                         source_info,
@@ -778,25 +903,15 @@ impl<'tcx> VectorResolver<'tcx> {
                     }
                 }
                 CondiGet(place, rvalue, _) => {
-                    // TODO: needs legality check here: If the get type is a
-                    // mutable Ref(..) or RawPtr(..), it must be guaranteed that
-                    // the written value will not be read in the next loop.
-                    // Otherwise, this mir cannot be vectorized.
-                    if let Some(local) = place.as_local() {
-                        self.insert_vector(&local, tcx, body);
-                        self.condi_vector.insert(local);
-                        let temp_simd = self.get_vector(&local).unwrap();
-                        let des = Place {
-                            local: temp_simd,
-                            projection: tcx.intern_place_elems(&[PlaceElem::Index(inner)]),
-                        };
-                        body[block].statements.push(Statement {
-                            source_info,
-                            kind: Assign(Box::new((des, rvalue.clone()))),
-                        })
-                    } else {
-                        unimplemented!("cannot put condi to a non-local")
-                    }
+                    let temp_simd = self.get_vector(place).unwrap();
+                    let des = Place {
+                        local: temp_simd,
+                        projection: tcx.intern_place_elems(&[PlaceElem::Index(inner)]),
+                    };
+                    body[block].statements.push(Statement {
+                        source_info,
+                        kind: Assign(Box::new((des, rvalue.clone()))),
+                    })
                 }
                 _ => unimplemented!("resolve condi stmt failed: {:?}", stmt),
             }
@@ -877,15 +992,16 @@ impl<'tcx> VectorResolver<'tcx> {
         let mut current = loop_next;
         for stmt in stmts {
             match stmt {
-                TempAssign(mut place, mut rvalue, bitset, location) => {
+                TempAssign(mut place, mut rvalue, bitset, location)
+                | AfterGet(mut place, mut rvalue, bitset, location) => {
                     bitset.iter().for_each(|local| {
-                        if let Some(simd_rhs) = self.get_vector(&local) {
+                        if let Some(simd_rhs) = self.get_vector(&Place::from(local)) {
                             let mut ptv =
                                 PlaceToVector { tcx, temp: local, vector: simd_rhs, inner };
                             ptv.visit_rvalue(&mut rvalue, location);
                         };
                     });
-                    if let Some(simd_lhs) = self.get_vector(&place.local) {
+                    if let Some(simd_lhs) = self.get_vector(&place) {
                         let mut ptv =
                             PlaceToVector { tcx, temp: place.local, vector: simd_lhs, inner };
                         ptv.visit_place(
@@ -905,7 +1021,7 @@ impl<'tcx> VectorResolver<'tcx> {
                     {
                         args.iter().for_each(|operand| {
                             let local = operand.place().unwrap().as_local().unwrap();
-                            if let Some(simd_rhs) = self.get_vector(&local) {
+                            if let Some(simd_rhs) = self.get_vector(&Place::from(local)) {
                                 body[current].statements.push(Statement {
                                     source_info,
                                     kind: Assign(Box::new((
@@ -920,13 +1036,10 @@ impl<'tcx> VectorResolver<'tcx> {
                             };
                         });
                         let place = destination.unwrap().0;
-                        let des =
-                            self.get_vector(&place.as_local().unwrap()).map_or(place, |lhs| {
-                                Place {
-                                    local: lhs,
-                                    projection: tcx.intern_place_elems(&[PlaceElem::Index(inner)]),
-                                }
-                            });
+                        let des = self.get_vector(&place).map_or(place, |lhs| Place {
+                            local: lhs,
+                            projection: tcx.intern_place_elems(&[PlaceElem::Index(inner)]),
+                        });
                         body[current].terminator = Some(Terminator {
                             source_info,
                             kind: Call {
@@ -943,40 +1056,100 @@ impl<'tcx> VectorResolver<'tcx> {
                         bug!("wrong terminator stmt: {:?}", stmt)
                     }
                 }
-                AfterSet(place, rvalue, bitset) => {
+                AfterSet(place, mut rvalue, bitset, location) => {
                     bitset.iter().for_each(|local| {
-                        if let Some(simd_rhs) = self.temp_to_vector.get(&local) {
-                            body[current].statements.push(Statement {
-                                source_info,
-                                kind: Assign(Box::new((
-                                    Place::from(local),
-                                    Rvalue::Use(Operand::Copy(Place {
-                                        local: *simd_rhs,
-                                        projection: tcx
-                                            .intern_place_elems(&[PlaceElem::Index(inner)]),
-                                    })),
-                                ))),
-                            })
-                        };
+                        if local != place.local {
+                            if let Some(simd_rhs) = self.get_vector(&Place::from(local)) {
+                                let mut ptv =
+                                    PlaceToVector { tcx, temp: local, vector: simd_rhs, inner };
+                                ptv.visit_rvalue(&mut rvalue, location);
+                            };
+                        }
                     });
                     body[current].statements.push(Statement {
                         source_info,
-                        kind: Assign(Box::new((place, rvalue.clone()))),
+                        kind: Assign(Box::new((place.clone(), rvalue.clone()))),
+                    });
+                    if let Some(lhs) = self.no_reset_after_vector.get(&place) {
+                        let p = Place {
+                            local: *lhs,
+                            projection: tcx.intern_place_elems(&[PlaceElem::Index(inner)]),
+                        };
+                        body[current].statements.push(Statement {
+                            source_info,
+                            kind: Assign(Box::new((p, Rvalue::Use(Operand::Copy(place))))),
+                        });
+                    }
+                }
+                ResumeAfter(place) => {
+                    for proj in place.projection {
+                        if let PlaceElem::Index(local) = proj {
+                            if let Some(simd_rhs) = self.get_vector(&Place::from(local)) {
+                                body[current].statements.push(Statement {
+                                    source_info,
+                                    kind: Assign(Box::new((
+                                        Place::from(local),
+                                        Rvalue::Use(Operand::Copy(Place {
+                                            local: simd_rhs,
+                                            projection: tcx
+                                                .intern_place_elems(&[PlaceElem::Index(inner)]),
+                                        })),
+                                    ))),
+                                })
+                            };
+                        }
+                    }
+                    body[current].statements.push(Statement {
+                        source_info,
+                        kind: Assign(Box::new((
+                            place,
+                            Rvalue::Use(Operand::Copy(Place {
+                                local: self.get_vector(&place).unwrap(),
+                                projection: tcx.intern_place_elems(&[PlaceElem::Index(inner)]),
+                            })),
+                        ))),
                     });
                 }
                 OtherTerminator(location) => {
                     let next = body.basic_blocks_mut().push(BasicBlockData::new(None));
-                    let kind = body[location.block].terminator().kind.clone();
-                    match kind {
-                        Assert { cond, expected, msg, target: _, cleanup } => {
+                    let term = body[location.block].terminator().clone();
+                    match term.kind {
+                        Assert {
+                            cond,
+                            expected,
+                            msg: AssertKind::BoundsCheck { len: op1, index: op2 },
+                            target: _,
+                            cleanup,
+                        } => {
+                            if let Some(p) = op2.place() {
+                                if let Some(rhs) = self.get_vector(&p) {
+                                    body[current].statements.push(Statement {
+                                        source_info,
+                                        kind: Assign(Box::new((
+                                            op2.place().unwrap(),
+                                            Rvalue::Use(Operand::Copy(Place {
+                                                local: rhs,
+                                                projection: tcx
+                                                    .intern_place_elems(&[PlaceElem::Index(inner)]),
+                                            })),
+                                        ))),
+                                    });
+                                }
+                            }
                             body[current].terminator = Some(Terminator {
                                 source_info,
-                                kind: Assert { cond, expected, msg, target: next, cleanup },
+                                kind: Assert {
+                                    cond,
+                                    expected,
+                                    msg: AssertKind::BoundsCheck { len: op1, index: op2 },
+                                    target: next,
+                                    cleanup,
+                                },
                             });
                             current = next;
                         }
                         _ => {
-                            unimplemented!("terminator {:?} are not supported in inner loop", kind)
+                            unimplemented!("terminator {:?} are not supported in inner loop", term)
                         }
                     }
                 }
@@ -1031,18 +1204,23 @@ impl<'tcx> VectorResolver<'tcx> {
                         body[location.block].statements[location.statement_index].kind.clone();
                     resolved_stmts.push(StraightStmt(Statement { source_info, kind }));
                 }
-                AfterSet(place, rvalue, _bitset) => match rvalue {
-                    Rvalue::BinaryOp(binop, ops) => {
-                        let after = place.as_local().unwrap();
+                AfterSet(place, rvalue, _bitset, _) => match rvalue {
+                    Rvalue::BinaryOp(binop, ops) | Rvalue::CheckedBinaryOp(binop, ops) => {
+                        let after = place.local;
                         let (op1, op2) = ops.as_ref();
                         let mut after_use = false;
                         for i in index + 1..vect_stmts.len() {
                             match &vect_stmts[i] {
-                                AfterSet(place, _, right_locals)
-                                | AfterGet(place, _, right_locals) => {
+                                AfterSet(place2, rvalue, right_locals, _)
+                                | AfterGet(place2, rvalue, right_locals, _) => {
                                     if right_locals.contains(after) {
-                                        if let Some(local) = place.as_local() {
+                                        if let Some(local) = place2.as_local() {
                                             if local == after {
+                                                continue;
+                                            }
+                                        }
+                                        if let Rvalue::Ref(_, _, ref_place) = rvalue {
+                                            if ref_place.local == after {
                                                 continue;
                                             }
                                         }
@@ -1053,25 +1231,27 @@ impl<'tcx> VectorResolver<'tcx> {
                                 _ => {}
                             }
                         }
-                        resolved_stmts.push(BinOpAfterSet(
-                            *place,
-                            *binop,
-                            op1.clone(),
-                            op2.clone(),
-                            !after_use,
-                        ));
+                        if !after_use {
+                            resolved_stmts.push(BinOpAfterSet(
+                                *place,
+                                *binop,
+                                op1.clone(),
+                                op2.clone(),
+                            ));
+                        } else {
+                            resolved_stmts.push(InnerLoopStmt(stmt.clone()));
+                        }
                     }
                     _ => {
                         resolved_stmts.push(InnerLoopStmt(stmt.clone()));
                     }
                 },
-                TempAssign(place, rvalue, _, _) => match rvalue {
-                    Rvalue::BinaryOp(bin_op, ops) => {
+                TempAssign(place, rvalue, _, location) => match rvalue {
+                    Rvalue::BinaryOp(bin_op, ops) | Rvalue::CheckedBinaryOp(bin_op, ops) => {
                         let (op1, op2) = ops.as_ref();
-                        // array bounds check
                         if index > 0 && index < vect_stmts.len() - 1 {
-                            if let TempAssign(place_pre, Rvalue::Len(..), _, _) =
-                                &vect_stmts[index - 1]
+                            if let TempAssign(place_pre, Rvalue::Len(..), _, _)
+                            | AfterGet(place_pre, Rvalue::Len(..), _, _) = &vect_stmts[index - 1]
                             {
                                 if matches!(bin_op, BinOp::Lt)
                                     && Some(place_pre) == op2.place().as_ref()
@@ -1088,9 +1268,77 @@ impl<'tcx> VectorResolver<'tcx> {
                                     }
                                 }
                             }
+                            if matches!(bin_op, BinOp::Lt) {
+                                unimplemented!("Lt binop in {:?}", location)
+                            }
                         }
                         resolved_stmts.push(BinOpAssign(*place, *bin_op, op1.clone(), op2.clone()));
                     }
+                    Rvalue::Cast(CastKind::Misc, op, ty2) => {
+                        let ty1 = op.ty(body, tcx);
+                        if ty1.is_integral() && ty2.is_integral() {
+                            resolved_stmts.push(Cast(*place, op.clone(), ty2));
+                        } else {
+                            resolved_stmts.push(InnerLoopStmt(stmt.clone()));
+                        }
+                    }
+                    /*Rvalue::Len(..) => {
+                        if index < vect_stmts.len() - 2 {
+                            if let TempAssign(place_lt, Rvalue::BinaryOp(BinOp::Lt, ..), _, _) =
+                                &vect_stmts[index + 1]
+                            {
+                                if let OtherTerminator(location) = &vect_stmts[index + 2] {
+                                    if let TerminatorKind::Assert { cond, .. } =
+                                        &body[location.block].terminator().kind
+                                    {
+                                        if cond.place().as_ref() == Some(place_lt) {
+                                            // bounds check
+                                            continue;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        resolved_stmts.push(InnerLoopStmt(stmt.clone()));
+                    }*/
+                    _ => {
+                        resolved_stmts.push(InnerLoopStmt(stmt.clone()));
+                    }
+                },
+                AfterGet(place, rvalue, _, _) => match rvalue {
+                    Rvalue::Use(op) => {
+                        if let Some(p) = op.place() {
+                            let proj = p.projection;
+                            if proj.len() == 2 && matches!(proj[0], PlaceElem::Deref) {
+                                if let PlaceElem::Index(local) = proj[1] {
+                                    if self.range_condi.contains(&local) {
+                                        resolved_stmts.push(ReadVector(*place, p, local));
+                                        continue;
+                                    }
+                                }
+                            }
+                        }
+                        resolved_stmts.push(InnerLoopStmt(stmt.clone()));
+                    }
+                    /*Rvalue::Len(..) => {
+                        if index < vect_stmts.len() - 2 {
+                            if let TempAssign(place_lt, Rvalue::BinaryOp(BinOp::Lt, ..), _, _) =
+                                &vect_stmts[index + 1]
+                            {
+                                if let OtherTerminator(location) = &vect_stmts[index + 2] {
+                                    if let TerminatorKind::Assert { cond, .. } =
+                                        &body[location.block].terminator().kind
+                                    {
+                                        if cond.place().as_ref() == Some(place_lt) {
+                                            // bounds check
+                                            continue;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        resolved_stmts.push(InnerLoopStmt(stmt.clone()));
+                    }*/
                     _ => {
                         resolved_stmts.push(InnerLoopStmt(stmt.clone()));
                     }
@@ -1130,6 +1378,15 @@ impl<'tcx> VectorResolver<'tcx> {
                         kind: Goto { target: outer_loop },
                     }));
                 }
+                /*OtherTerminator(location) => {
+                    if let TerminatorKind::Assert { msg: AssertKind::BoundsCheck { .. }, .. } =
+                        &body[location.block].terminator().kind
+                    {
+                        // bounds check
+                        continue;
+                    }
+                    resolved_stmts.push(InnerLoopStmt(stmt.clone()));
+                }*/
                 _ => resolved_stmts.push(InnerLoopStmt(stmt.clone())),
             }
         }
@@ -1140,42 +1397,78 @@ impl<'tcx> VectorResolver<'tcx> {
         &'r mut self,
         tcx: TyCtxt<'tcx>,
         body: &mut Body<'tcx>,
+        condi_stmts: &Vec<ExtraStmt<'tcx>>,
         resolved_stmts: &mut Vec<VectorStmt<'tcx>>,
     ) {
+        for stmt in condi_stmts {
+            match stmt {
+                CondiGet(place, _, _) => {
+                    self.insert_vector(&place.as_local().unwrap(), tcx, body, true);
+                    self.condi_vector.insert(place.as_local().unwrap());
+                }
+                _ => {}
+            }
+        }
         let mut changed = true;
         // insert vector from vertical statements
         for stmt in resolved_stmts.iter() {
             match stmt {
                 InnerLoopStmt(..) | StraightStmt(..) | StraightTerm(..) | UseAssign(..) => {}
                 BinOpAssign(place, _, op1, op2) => {
-                    self.insert_vector(&place.as_local().unwrap(), tcx, body);
-                    if let Some(Some(local)) = op1.place().map(|place| place.as_local()) {
-                        self.insert_vector(&local, tcx, body);
+                    self.insert_vector(&place.local, tcx, body, false);
+
+                    if let Some(p1) = op1.place() {
+                        self.insert_vector(&p1.local, tcx, body, false);
                     }
-                    if let Some(Some(local)) = op2.place().map(|place| place.as_local()) {
-                        self.insert_vector(&local, tcx, body);
+                    if let Some(p2) = op2.place() {
+                        self.insert_vector(&p2.local, tcx, body, false);
                     }
                 }
-                BinOpAfterSet(place, _, op1, op2, vector) => {
-                    if *vector {
-                        self.insert_vector(&place.as_local().unwrap(), tcx, body);
-                        if let Some(Some(local)) = op1.place().map(|place| place.as_local()) {
-                            self.insert_vector(&local, tcx, body);
-                        }
-                        if let Some(Some(local)) = op2.place().map(|place| place.as_local()) {
-                            self.insert_vector(&local, tcx, body);
+                BinOpAfterSet(place, _, op1, op2) => {
+                    if self.get_vector(place).is_none() {
+                        let ty = place.ty(body, tcx).ty;
+                        let v = body.local_decls.push(LocalDecl::new(
+                            tcx.mk_array(ty, self.vector_len.unwrap()),
+                            DUMMY_SP,
+                        ));
+                        self.no_read_after_vector.insert(*place, v);
+                        assert!(ty.is_primitive());
+                        body.local_decls[v].vector = true;
+
+                        for proj in place.projection {
+                            if let PlaceElem::Index(local) = proj {
+                                self.insert_vector(&local, tcx, body, false);
+                            }
                         }
                     }
+
+                    if let Some(p1) = op1.place() {
+                        if self.locals_use[p1.local] == InLoop {
+                            self.insert_vector(&p1.local, tcx, body, false);
+                        }
+                    }
+                    if let Some(p2) = op2.place() {
+                        if self.locals_use[p2.local] == InLoop {
+                            self.insert_vector(&p2.local, tcx, body, false);
+                        }
+                    }
+                }
+                Cast(place, op, _) => {
+                    self.insert_vector(&place.as_local().unwrap(), tcx, body, false);
+
+                    if let Some(p) = op.place() {
+                        self.insert_vector(&p.as_local().unwrap(), tcx, body, false);
+                    }
+                }
+                ReadVector(place, _, local) => {
+                    self.insert_vector(&place.as_local().unwrap(), tcx, body, false);
+                    self.insert_vector(local, tcx, body, false);
                 }
                 VectorTerm(func, args, des) => match *func {
                     sym::simd_fsqrt => {
-                        self.insert_vector(&des.as_local().unwrap(), tcx, body);
+                        self.insert_vector(&des.as_local().unwrap(), tcx, body, false);
                         args.iter().for_each(|arg| {
-                            self.insert_vector(
-                                &arg.place().unwrap().as_local().unwrap(),
-                                tcx,
-                                body,
-                            );
+                            self.insert_vector(&arg.place().unwrap().local, tcx, body, false);
                         });
                     }
                     _ => unimplemented!("unimplemented vector func"),
@@ -1188,23 +1481,97 @@ impl<'tcx> VectorResolver<'tcx> {
             changed = false;
             for index in 0..resolved_stmts.len() {
                 match &resolved_stmts[index] {
-                    InnerLoopStmt(TempAssign(place, Rvalue::Use(operand), _, _)) => {
+                    InnerLoopStmt(TempAssign(place, Rvalue::Use(operand), _, _))
+                    | InnerLoopStmt(AfterGet(place, Rvalue::Use(operand), _, _)) => {
                         if let (Some(lhs), Some(Some(rhs))) =
                             (place.as_local(), operand.place().map(|place| place.as_local()))
                         {
-                            if self.temp_to_vector.get(&rhs).is_some() {
+                            if self.get_vector(&Place::from(lhs)).is_some()
+                                && self.get_vector(&Place::from(rhs)).is_some()
+                            {
                                 resolved_stmts[index] = UseAssign(*place, operand.clone());
-                                if self.insert_vector(&lhs, tcx, body) {
-                                    changed = true;
-                                }
-                                continue;
                             }
-                            if self.temp_to_vector.get(&lhs).is_some() {
-                                resolved_stmts[index] = UseAssign(*place, operand.clone());
-                                if self.insert_vector(&rhs, tcx, body) {
-                                    changed = true;
+                        }
+                    }
+                    InnerLoopStmt(AfterSet(place, Rvalue::BinaryOp(_, ops), _, _))
+                    | InnerLoopStmt(AfterSet(place, Rvalue::CheckedBinaryOp(_, ops), _, _))=> {
+                        let mut reset = false;
+                        for j in index + 1..resolved_stmts.len() {
+                            match &resolved_stmts[j] {
+                                InnerLoopStmt(AfterSet(p, _, _, _)) => {
+                                    if p.local == place.local {
+                                        reset = true;
+                                        break;
+                                    }
+                                }
+                                _ => {}
+                            }
+                        }
+                        if !reset {
+                            let ty = place.ty(body, tcx).ty;
+                            let v = body.local_decls.push(LocalDecl::new(
+                                tcx.mk_array(ty, self.vector_len.unwrap()),
+                                DUMMY_SP,
+                            ));
+                            self.no_reset_after_vector.insert(*place, v);
+                            assert!(ty.is_primitive());
+                            body.local_decls[v].vector = true;
+                            for proj in place.projection {
+                                if let PlaceElem::Index(local) = proj {
+                                    self.insert_vector(&local, tcx, body, false);
                                 }
                             }
+
+                            let (op1, op2) = ops.as_ref();
+                            if let Some(p1) = op1.place() {
+                                if self.locals_use[p1.local] == InLoop {
+                                    if self.insert_vector(&p1.local, tcx, body, false) {
+                                        changed = true;
+                                    };
+                                }
+                            }
+                            if let Some(p2) = op2.place() {
+                                if self.locals_use[p2.local] == InLoop {
+                                    if self.insert_vector(&p2.local, tcx, body, false) {
+                                        changed = true;
+                                    };
+                                }
+                            }
+                        }
+                    }
+                    InnerLoopStmt(AfterGet(place, Rvalue::BinaryOp(bin_op, ops), _, _))
+                    | InnerLoopStmt(AfterGet(place, Rvalue::CheckedBinaryOp(bin_op, ops), _, _))=> {
+                        let mut all_vec_after = true;
+                        let (op1, op2) = ops.as_ref();
+                        if let Some(p1) = op1.place() {
+                            if self.locals_use[p1.local] == AfterLoop
+                                && self.no_reset_after_vector.get(&p1).is_none()
+                            {
+                                all_vec_after = false;
+                            }
+                        }
+                        if let Some(p2) = op2.place() {
+                            if self.locals_use[p2.local] == AfterLoop
+                                && self.no_reset_after_vector.get(&p2).is_none()
+                            {
+                                all_vec_after = false;
+                            }
+                        }
+                        if all_vec_after {
+                            changed = true;
+                            self.insert_vector(&place.local, tcx, body, false);
+                            if let Some(p1) = op1.place() {
+                                if self.locals_use[p1.local] == InLoop {
+                                    self.insert_vector(&p1.local, tcx, body, false);
+                                }
+                            }
+                            if let Some(p2) = op2.place() {
+                                if self.locals_use[p2.local] == InLoop {
+                                    self.insert_vector(&p2.local, tcx, body, false);
+                                }
+                            }
+                            resolved_stmts[index] =
+                                BinOpAssign(*place, *bin_op, op1.clone(), op2.clone());
                         }
                     }
                     _ => {}
@@ -1288,13 +1655,16 @@ impl<'tcx> VectorResolver<'tcx> {
         let mut vector_type = None;
         for stmt in resolved_stmts {
             match stmt {
-                StraightStmt(..) | StraightTerm(..) | InnerLoopStmt(..) | UseAssign(..) => {}
-                BinOpAssign(_, _, op1, _) | BinOpAfterSet(_, _, op1, _, _) => {
+                StraightStmt(..) | StraightTerm(..) | InnerLoopStmt(..) | UseAssign(..)
+                | Cast(..) | ReadVector(..) => {}
+                BinOpAssign(_, _, op1, _) | BinOpAfterSet(_, _, op1, _) => {
                     let op_ty = op1.ty(body, tcx);
                     if let Some(vec_ty) = vector_type {
                         if op_ty != vec_ty {
                             if op_ty == tcx.types.u8 || vec_ty == tcx.types.u8 {
                                 vector_type = Some(tcx.types.u8)
+                            } else if op_ty == tcx.types.u32 || vec_ty == tcx.types.u32 {
+                                vector_type = Some(tcx.types.u32)
                             } else {
                                 unimplemented!(
                                     "different vector element: {:?} and {:?}",
@@ -1310,7 +1680,9 @@ impl<'tcx> VectorResolver<'tcx> {
                 VectorTerm(_, args, _) => {
                     let op_ty = args[0].ty(body, tcx);
                     if let Some(vec_ty) = vector_type {
-                        if op_ty == tcx.types.u8 || vec_ty == tcx.types.u8 {
+                        if op_ty == tcx.types.u32 || vec_ty == tcx.types.u32 {
+                            vector_type = Some(tcx.types.u32)
+                        } else if op_ty == tcx.types.u8 || vec_ty == tcx.types.u8 {
                             vector_type = Some(tcx.types.u8)
                         } else {
                             unimplemented!("different vector element: {:?} and {:?}", vec_ty, op_ty)
@@ -1325,7 +1697,9 @@ impl<'tcx> VectorResolver<'tcx> {
         let len = if ty == tcx.types.f32 {
             if tcx.sess.target.arch == "x86_64" { 32 } else { 8 }
         } else if ty == tcx.types.u8 {
-            16
+            32
+        } else if ty == tcx.types.u32 {
+            16 
         } else {
             unimplemented!("unimplemented vector element type: {:?}", ty)
         };
@@ -1339,7 +1713,7 @@ impl<'tcx> VectorResolver<'tcx> {
         mut current: BasicBlock,
         inner: Local,
         resolved_stmts: Vec<VectorStmt<'tcx>>,
-    ) -> (Vec<RemainStmt>, BasicBlock) {
+    ) -> (Vec<RemainStmt<'tcx>>, BasicBlock) {
         let source_info = SourceInfo { span: DUMMY_SP, scope: OUTERMOST_SOURCE_SCOPE };
         let mut remain_stmt = Vec::new();
 
@@ -1354,146 +1728,282 @@ impl<'tcx> VectorResolver<'tcx> {
                 }
                 match stmt {
                     StraightStmt(stmt) => {
+                        if let StorageDead(local) = &stmt.kind {
+                            if self.locals_use[*local] == AfterLoop {
+                                remain_stmt.push(RemainStmt::DeadAfter(*local));
+                                continue;
+                            }
+                        }
                         body[current].statements.push(stmt);
                     }
-                    BinOpAfterSet(place, bin_op, op1, op2, vector) => {
-                        let l1 = op1.place().unwrap().as_local().unwrap();
-                        let l2 = op2.place().unwrap().as_local().unwrap();
+                    BinOpAfterSet(place, bin_op, op1, op2) => {
+                        let p1 = op1.place().unwrap();
+                        let p2 = op2.place().unwrap();
+                        let l1 = p1.local;
+                        let l2 = p2.local;
                         match (self.locals_use.get(l1), self.locals_use.get(l2)) {
                             (Some(AfterLoop), Some(InLoop)) => {
-                                if vector {
-                                    let lhs = self.get_vector(&place.as_local().unwrap()).unwrap();
-                                    let func = match bin_op {
-                                        BinOp::Add => sym::simd_add,
-                                        BinOp::Shr => sym::simd_shr,
-                                        BinOp::BitAnd => sym::simd_and,
-                                        _ => {
-                                            unimplemented!("unimplemented binop: {:?}", bin_op)
-                                        }
-                                    };
-
-                                    let simd_rhs1 = self.get_vector(&l1).unwrap();
-                                    let simd_rhs2 = self.get_vector(&l2).unwrap();
-
-                                    let args = vec![
-                                        if lhs == simd_rhs1 {
-                                            let mut inited = false;
-                                            for rest in &remain_stmt {
-                                                match rest {
-                                                    RemainStmt::InitAfterVector(l, b)
-                                                        if l == &place.as_local().unwrap() =>
-                                                    {
-                                                        inited = true;
-                                                        if b != &bin_op {
-                                                            unimplemented!(
-                                                                "different init for {:?}",
-                                                                l
-                                                            )
-                                                        }
-                                                    }
-                                                    _ => {}
-                                                }
-                                            }
-                                            if !inited {
-                                                remain_stmt.push(RemainStmt::InitAfterVector(
-                                                    place.as_local().unwrap(),
-                                                    bin_op,
-                                                ));
-                                            }
-                                            Operand::Copy(Place::from(simd_rhs1))
-                                        } else {
-                                            Operand::Move(Place::from(simd_rhs1))
-                                        },
-                                        if lhs == simd_rhs2 {
-                                            let mut inited = false;
-                                            for rest in &remain_stmt {
-                                                match rest {
-                                                    RemainStmt::InitAfterVector(l, b)
-                                                        if l == &place.as_local().unwrap() =>
-                                                    {
-                                                        inited = true;
-                                                        if b != &bin_op {
-                                                            unimplemented!(
-                                                                "different init for {:?}",
-                                                                l
-                                                            )
-                                                        }
-                                                    }
-                                                    _ => {}
-                                                }
-                                            }
-                                            if !inited {
-                                                remain_stmt.push(RemainStmt::InitAfterVector(
-                                                    place.as_local().unwrap(),
-                                                    bin_op,
-                                                ));
-                                            }
-                                            remain_stmt.push(RemainStmt::InitAfterVector(
-                                                place.as_local().unwrap(),
-                                                bin_op,
-                                            ));
-                                            Operand::Copy(Place::from(simd_rhs2))
-                                        } else {
-                                            Operand::Move(Place::from(simd_rhs2))
-                                        },
-                                    ];
-
-                                    let next =
-                                        body.basic_blocks_mut().push(BasicBlockData::new(None));
-                                    body[current].terminator = Some(Terminator {
-                                        source_info,
-                                        kind: VectorFunc {
-                                            func,
-                                            args,
-                                            destination: Some((Place::from(lhs), next)),
-                                        },
-                                    });
-                                    current = next;
-
-                                    let mut seted = false;
-                                    for rest in &remain_stmt {
-                                        match rest {
-                                            RemainStmt::SetAfterReduce(p, b) if p == &place.as_local().unwrap() && b == &bin_op => {
-                                                seted = true;
-                                            }
-                                            _ => {}
-                                        }
+                                let lhs = self.get_vector(&place).unwrap();
+                                let func = match bin_op {
+                                    BinOp::Add => sym::simd_add,
+                                    BinOp::Shr => sym::simd_shr,
+                                    BinOp::BitAnd => sym::simd_and,
+                                    _ => {
+                                        unimplemented!("unimplemented binop: {:?}", bin_op)
                                     }
-                                    if !seted {
-                                        remain_stmt.push(RemainStmt::SetAfterReduce(
-                                            place.as_local().unwrap(),
-                                            bin_op,
-                                        ))
+                                };
+
+                                let simd_rhs1 = self.get_vector(&p1).unwrap();
+                                let simd_rhs2 = self.get_vector(&p2).unwrap();
+
+                                let args = vec![
+                                    if lhs == simd_rhs1 {
+                                        let mut inited = false;
+                                        for rest in &remain_stmt {
+                                            match rest {
+                                                RemainStmt::InitAfterVector(l, b)
+                                                    if l == &place =>
+                                                {
+                                                    inited = true;
+                                                    if b != &bin_op {
+                                                        unimplemented!("different init for {:?}", l)
+                                                    }
+                                                }
+                                                _ => {}
+                                            }
+                                        }
+                                        if !inited {
+                                            remain_stmt
+                                                .push(RemainStmt::InitAfterVector(place, bin_op));
+                                        }
+                                        Operand::Copy(Place::from(simd_rhs1))
+                                    } else {
+                                        Operand::Move(Place::from(simd_rhs1))
+                                    },
+                                    if lhs == simd_rhs2 {
+                                        let mut inited = false;
+                                        for rest in &remain_stmt {
+                                            match rest {
+                                                RemainStmt::InitAfterVector(l, b)
+                                                    if l == &place =>
+                                                {
+                                                    inited = true;
+                                                    if b != &bin_op {
+                                                        unimplemented!("different init for {:?}", l)
+                                                    }
+                                                }
+                                                _ => {}
+                                            }
+                                        }
+                                        if !inited {
+                                            remain_stmt
+                                                .push(RemainStmt::InitAfterVector(place, bin_op));
+                                        }
+                                        remain_stmt
+                                            .push(RemainStmt::InitAfterVector(place, bin_op));
+                                        Operand::Copy(Place::from(simd_rhs2))
+                                    } else {
+                                        Operand::Move(Place::from(simd_rhs2))
+                                    },
+                                ];
+
+                                let next = body.basic_blocks_mut().push(BasicBlockData::new(None));
+                                body[current].terminator = Some(Terminator {
+                                    source_info,
+                                    kind: VectorFunc {
+                                        func,
+                                        args,
+                                        destination: Some((Place::from(lhs), next)),
+                                    },
+                                });
+                                current = next;
+
+                                let mut seted = false;
+                                for rest in &remain_stmt {
+                                    match rest {
+                                        RemainStmt::SetAfterReduce(p, b)
+                                            if p == &place && b == &bin_op =>
+                                        {
+                                            seted = true;
+                                        }
+                                        _ => {}
                                     }
-                                } else {
-                                    let rhs = self.get_vector(&l2).unwrap();
-                                    let func = match bin_op {
-                                        BinOp::Add => sym::simd_reduce_add_unordered,
-                                        _ => unimplemented!(
-                                            "unimplemented after set bin op: {:?}",
-                                            bin_op
-                                        ),
-                                    };
-                                    let next =
-                                        body.basic_blocks_mut().push(BasicBlockData::new(None));
-                                    let args = vec![Operand::Move(Place::from(rhs))];
-                                    body[current].terminator = Some(Terminator {
-                                        source_info,
-                                        kind: VectorFunc {
-                                            func,
-                                            args,
-                                            destination: Some((op2.place().unwrap(), next)),
-                                        },
-                                    });
-                                    current = next;
-                                    body[current].statements.push(Statement {
-                                        source_info,
-                                        kind: Assign(Box::new((
-                                            place,
-                                            Rvalue::BinaryOp(bin_op, Box::new((op1, op2))),
-                                        ))),
-                                    });
                                 }
+                                if !seted {
+                                    remain_stmt.push(RemainStmt::SetAfterReduce(place, bin_op))
+                                }
+                            }
+                            (Some(InLoop), Some(InLoop)) => {
+                                let func = match bin_op {
+                                    BinOp::Add => sym::simd_add,
+                                    BinOp::Shr => sym::simd_shr,
+                                    BinOp::Mul => sym::simd_mul,
+                                    BinOp::BitAnd => sym::simd_and,
+                                    _ => unimplemented!("unimplemented binop: {:?}", bin_op),
+                                };
+                                let (simd_rhs1, simd_rhs2) = (
+                                    self.get_vector(&op1.place().unwrap()).unwrap(),
+                                    self.get_vector(&op2.place().unwrap()).unwrap(),
+                                );
+                                let args = vec![
+                                    Operand::Move(Place::from(simd_rhs1)),
+                                    Operand::Move(Place::from(simd_rhs2)),
+                                ];
+                                let simd_des = self.get_vector(&place).unwrap();
+
+                                let next = body.basic_blocks_mut().push(BasicBlockData::new(None));
+                                body[current].terminator = Some(Terminator {
+                                    source_info,
+                                    kind: VectorFunc {
+                                        func,
+                                        args,
+                                        destination: Some((Place::from(simd_des), next)),
+                                    },
+                                });
+                                current = next;
+                                let proj = place.projection;
+                                if proj.len() == 2 && matches!(proj[0], PlaceElem::Deref) {
+                                    if let PlaceElem::Index(local) = proj[1] {
+                                        if self.range_condi.contains(&local) {
+                                            body[current].statements.push(Statement {
+                                                source_info,
+                                                kind: Assign(Box::new((
+                                                    Place::from(inner),
+                                                    Rvalue::Use(Operand::Constant(Box::new(
+                                                        Constant {
+                                                            span: DUMMY_SP,
+                                                            user_ty: None,
+                                                            literal: Const::from_usize(tcx, 0)
+                                                                .into(),
+                                                        },
+                                                    ))),
+                                                ))),
+                                            });
+                                            body[current].statements.push(Statement {
+                                                source_info,
+                                                kind: Assign(Box::new((
+                                                    Place::from(local),
+                                                    Rvalue::Use(Operand::Copy(Place {
+                                                        local: self
+                                                            .get_vector(&Place::from(local))
+                                                            .unwrap(),
+                                                        projection: tcx.intern_place_elems(&[
+                                                            PlaceElem::Index(inner),
+                                                        ]),
+                                                    })),
+                                                ))),
+                                            });
+
+                                            let elem_ty = place.ty(body, tcx).ty;
+                                            let head_ptr = body.local_decls.push(LocalDecl::new(
+                                                tcx.mk_ptr(TypeAndMut {
+                                                    ty: elem_ty,
+                                                    mutbl: Mutability::Not,
+                                                }),
+                                                DUMMY_SP,
+                                            ));
+                                            body[current].statements.push(Statement {
+                                                source_info,
+                                                kind: Assign(Box::new((
+                                                    Place::from(head_ptr),
+                                                    Rvalue::AddressOf(
+                                                        Mutability::Not,
+                                                        Place {
+                                                            local: simd_des,
+                                                            projection: tcx.intern_place_elems(&[
+                                                                PlaceElem::Index(inner),
+                                                            ]),
+                                                        },
+                                                    ),
+                                                ))),
+                                            });
+                                            let u8_ptr = tcx.mk_ptr(TypeAndMut {
+                                                ty: tcx.types.u8,
+                                                mutbl: Mutability::Not,
+                                            });
+                                            let head_ptr_u8 = body
+                                                .local_decls
+                                                .push(LocalDecl::new(u8_ptr, DUMMY_SP));
+                                            body[current].statements.push(Statement {
+                                                source_info,
+                                                kind: Assign(Box::new((
+                                                    Place::from(head_ptr_u8),
+                                                    Rvalue::Cast(
+                                                        CastKind::Misc,
+                                                        Operand::Move(Place::from(head_ptr)),
+                                                        u8_ptr,
+                                                    ),
+                                                ))),
+                                            });
+
+                                            let des_ptr = body.local_decls.push(LocalDecl::new(
+                                                tcx.mk_ptr(TypeAndMut {
+                                                    ty: elem_ty,
+                                                    mutbl: Mutability::Mut,
+                                                }),
+                                                DUMMY_SP,
+                                            ));
+                                            body[current].statements.push(Statement {
+                                                source_info,
+                                                kind: Assign(Box::new((
+                                                    Place::from(des_ptr),
+                                                    Rvalue::AddressOf(Mutability::Mut, place),
+                                                ))),
+                                            });
+                                            let u8_ptr_mut = tcx.mk_ptr(TypeAndMut {
+                                                ty: tcx.types.u8,
+                                                mutbl: Mutability::Mut,
+                                            });
+                                            let des_ptr_u8 = body
+                                                .local_decls
+                                                .push(LocalDecl::new(u8_ptr_mut, DUMMY_SP));
+                                            body[current].statements.push(Statement {
+                                                source_info,
+                                                kind: Assign(Box::new((
+                                                    Place::from(des_ptr_u8),
+                                                    Rvalue::Cast(
+                                                        CastKind::Misc,
+                                                        Operand::Move(Place::from(des_ptr)),
+                                                        u8_ptr_mut,
+                                                    ),
+                                                ))),
+                                            });
+                                            let elem_len = if elem_ty == tcx.types.u8 {
+                                                1
+                                            } else if elem_ty == tcx.types.u32 {
+                                                4
+                                            } else if elem_ty == tcx.types.f32 {
+                                                4
+                                            } else {
+                                                unimplemented!("unknown elem len: {:?}", elem_ty)
+                                            };
+                                            let count = Operand::Constant(Box::new(Constant {
+                                                span: DUMMY_SP,
+                                                user_ty: None,
+                                                literal: ConstantKind::Val(
+                                                    ConstValue::from_u64(
+                                                        self.vector_len.unwrap() * elem_len,
+                                                    ),
+                                                    tcx.types.usize,
+                                                ),
+                                            }));
+                                            body[current].statements.push(Statement {
+                                                source_info,
+                                                kind: CopyNonOverlapping(Box::new(
+                                                    rustc_middle::mir::CopyNonOverlapping {
+                                                        src: Operand::Move(Place::from(
+                                                            head_ptr_u8,
+                                                        )),
+                                                        dst: Operand::Move(Place::from(des_ptr_u8)),
+                                                        count,
+                                                    },
+                                                )),
+                                            });
+                                            continue;
+                                        }
+                                    }
+                                }
+                                inner_stmts.push(ResumeAfter(place));
                             }
                             _ => unimplemented!("set after ops local use: {:?} with {:?}", l1, l2),
                         }
@@ -1503,8 +2013,10 @@ impl<'tcx> VectorResolver<'tcx> {
                             place.as_local().unwrap(),
                             operand.place().unwrap().as_local().unwrap(),
                         );
-                        let (simd_lhs, simd_rhs) =
-                            (self.get_vector(&lhs).unwrap(), self.get_vector(&rhs).unwrap());
+                        let (simd_lhs, simd_rhs) = (
+                            self.get_vector(&Place::from(lhs)).unwrap(),
+                            self.get_vector(&Place::from(rhs)).unwrap(),
+                        );
                         body[current].statements.push(Statement {
                             source_info,
                             kind: Assign(Box::new((
@@ -1523,12 +2035,11 @@ impl<'tcx> VectorResolver<'tcx> {
                         };
 
                         let (simd_rhs1, simd_rhs2) = match (&op1.place(), &op2.place()) {
-                            (Some(p1), Some(p2)) => (
-                                self.get_vector(&p1.as_local().unwrap()).unwrap(),
-                                self.get_vector(&p2.as_local().unwrap()).unwrap(),
-                            ),
+                            (Some(p1), Some(p2)) => {
+                                (self.get_vector(&p1).unwrap(), self.get_vector(&p2).unwrap())
+                            }
                             (Some(p1), None) => {
-                                let simd_rhs1 = self.get_vector(&p1.as_local().unwrap()).unwrap();
+                                let simd_rhs1 = self.get_vector(&p1).unwrap();
                                 let ty = op1.ty(body, tcx);
                                 let ty2 = op2.ty(body, tcx);
 
@@ -1574,7 +2085,7 @@ impl<'tcx> VectorResolver<'tcx> {
                                 (simd_rhs1, temp)
                             }
                             (None, Some(p2)) => {
-                                let simd_rhs2 = self.get_vector(&p2.as_local().unwrap()).unwrap();
+                                let simd_rhs2 = self.get_vector(&p2).unwrap();
                                 let ty = op2.ty(body, tcx);
                                 let ty1 = op1.ty(body, tcx);
 
@@ -1620,8 +2131,8 @@ impl<'tcx> VectorResolver<'tcx> {
                             Operand::Move(Place::from(simd_rhs1)),
                             Operand::Move(Place::from(simd_rhs2)),
                         ];
-                        let des = place.as_local().unwrap();
-                        let simd_des = self.get_vector(&des).unwrap();
+                        //let des = place.as_local().unwrap();
+                        let simd_des = self.get_vector(&place).unwrap();
 
                         let next = body.basic_blocks_mut().push(BasicBlockData::new(None));
                         body[current].terminator = Some(Terminator {
@@ -1634,15 +2145,141 @@ impl<'tcx> VectorResolver<'tcx> {
                         });
                         current = next;
                     }
+                    Cast(place, op, _ty2) => {
+                        let func = sym::simd_cast;
+                        let simd_rhs = self.get_vector(&op.place().unwrap()).unwrap();
+                        let args = vec![Operand::Move(Place::from(simd_rhs))];
+
+                        let simd_lhs = self.get_vector(&place).unwrap();
+
+                        let next = body.basic_blocks_mut().push(BasicBlockData::new(None));
+                        body[current].terminator = Some(Terminator {
+                            source_info,
+                            kind: VectorFunc {
+                                func,
+                                args,
+                                destination: Some((Place::from(simd_lhs), next)),
+                            },
+                        });
+                        current = next;
+                    }
+                    ReadVector(place, p, local) => {
+                        body[current].statements.push(Statement {
+                            source_info,
+                            kind: Assign(Box::new((
+                                Place::from(inner),
+                                Rvalue::Use(Operand::Constant(Box::new(Constant {
+                                    span: DUMMY_SP,
+                                    user_ty: None,
+                                    literal: Const::from_usize(tcx, 0).into(),
+                                }))),
+                            ))),
+                        });
+                        body[current].statements.push(Statement {
+                            source_info,
+                            kind: Assign(Box::new((
+                                Place::from(local),
+                                Rvalue::Use(Operand::Move(Place {
+                                    local: self.get_vector(&Place::from(local)).unwrap(),
+                                    projection: tcx.intern_place_elems(&[PlaceElem::Index(inner)]),
+                                })),
+                            ))),
+                        });
+
+                        let elem_ty = place.ty(body, tcx).ty;
+                        let head_ptr = body.local_decls.push(LocalDecl::new(
+                            tcx.mk_ptr(TypeAndMut { ty: elem_ty, mutbl: Mutability::Not }),
+                            DUMMY_SP,
+                        ));
+                        body[current].statements.push(Statement {
+                            source_info,
+                            kind: Assign(Box::new((
+                                Place::from(head_ptr),
+                                Rvalue::AddressOf(Mutability::Not, p),
+                            ))),
+                        });
+                        let u8_ptr =
+                            tcx.mk_ptr(TypeAndMut { ty: tcx.types.u8, mutbl: Mutability::Not });
+                        let head_ptr_u8 = body.local_decls.push(LocalDecl::new(u8_ptr, DUMMY_SP));
+                        body[current].statements.push(Statement {
+                            source_info,
+                            kind: Assign(Box::new((
+                                Place::from(head_ptr_u8),
+                                Rvalue::Cast(
+                                    CastKind::Misc,
+                                    Operand::Move(Place::from(head_ptr)),
+                                    u8_ptr,
+                                ),
+                            ))),
+                        });
+
+                        let des = self.get_vector(&place).unwrap();
+                        let des_ptr = body.local_decls.push(LocalDecl::new(
+                            tcx.mk_ptr(TypeAndMut {
+                                ty: body.local_decls[des].ty,
+                                mutbl: Mutability::Mut,
+                            }),
+                            DUMMY_SP,
+                        ));
+                        body[current].statements.push(Statement {
+                            source_info,
+                            kind: Assign(Box::new((
+                                Place::from(des_ptr),
+                                Rvalue::AddressOf(Mutability::Mut, Place::from(des)),
+                            ))),
+                        });
+                        let u8_ptr_mut =
+                            tcx.mk_ptr(TypeAndMut { ty: tcx.types.u8, mutbl: Mutability::Mut });
+                        let des_ptr_u8 =
+                            body.local_decls.push(LocalDecl::new(u8_ptr_mut, DUMMY_SP));
+                        body[current].statements.push(Statement {
+                            source_info,
+                            kind: Assign(Box::new((
+                                Place::from(des_ptr_u8),
+                                Rvalue::Cast(
+                                    CastKind::Misc,
+                                    Operand::Move(Place::from(des_ptr)),
+                                    u8_ptr_mut,
+                                ),
+                            ))),
+                        });
+
+                        let elem_len = if elem_ty == tcx.types.u8 {
+                            1
+                        } else if elem_ty == tcx.types.u32 {
+                            4
+                        } else if elem_ty == tcx.types.f32 {
+                            4
+                        } else {
+                            unimplemented!("unknown elem len: {:?}", elem_ty)
+                        };
+                        let count = Operand::Constant(Box::new(Constant {
+                            span: DUMMY_SP,
+                            user_ty: None,
+                            literal: ConstantKind::Val(
+                                ConstValue::from_u64(self.vector_len.unwrap() * elem_len),
+                                tcx.types.usize,
+                            ),
+                        }));
+                        body[current].statements.push(Statement {
+                            source_info,
+                            kind: CopyNonOverlapping(Box::new(
+                                rustc_middle::mir::CopyNonOverlapping {
+                                    src: Operand::Move(Place::from(head_ptr_u8)),
+                                    dst: Operand::Move(Place::from(des_ptr_u8)),
+                                    count,
+                                },
+                            )),
+                        })
+                    }
                     VectorTerm(func, args, des) => {
                         let local = des.as_local().unwrap();
-                        let simd_des = self.get_vector(&local).unwrap_or(local);
+                        let simd_des = self.get_vector(&Place::from(local)).unwrap_or(local);
                         let args: Vec<_> = args
                             .iter()
                             .map(|arg| {
                                 Operand::Move(Place::from(
-                                    self.get_vector(&arg.place().unwrap().as_local().unwrap())
-                                        .unwrap(),
+                                    self.get_vector(&arg.place().unwrap()).unwrap(),
                                 ))
                             })
                             .collect();
@@ -1680,15 +2317,15 @@ impl<'tcx> VectorResolver<'tcx> {
         vect_stmts: &Vec<ExtraStmt<'tcx>>,
         inner: Local,
         mut remain_init: BasicBlock,
-        pre_remain_stmts: Vec<RemainStmt>,
+        pre_remain_stmts: Vec<RemainStmt<'tcx>>,
     ) {
         let source_info = SourceInfo { span: DUMMY_SP, scope: OUTERMOST_SOURCE_SCOPE };
         let pre_loop = *self.loops[0].0.last().unwrap();
         for stmt in pre_remain_stmts {
             match stmt {
-                RemainStmt::InitAfterVector(local, bin_op) => {
-                    let vector = self.get_vector(&local).unwrap();
-                    let ty = body.local_decls[local].ty;
+                RemainStmt::InitAfterVector(place, bin_op) => {
+                    let vector = self.get_vector(&place).unwrap();
+                    let ty = place.ty(body, tcx).ty;
 
                     let val = if ty == tcx.types.f32 {
                         match bin_op {
@@ -1703,6 +2340,16 @@ impl<'tcx> VectorResolver<'tcx> {
                         match bin_op {
                             BinOp::Add => ConstValue::Scalar(Scalar::from_u8(0)),
                             BinOp::Mul => ConstValue::Scalar(Scalar::from_u8(1)),
+                            _ => unimplemented!(
+                                "unsupported after set op: {:?} for {:?}",
+                                bin_op,
+                                ty
+                            ),
+                        }
+                    } else if ty == tcx.types.u32 {
+                        match bin_op {
+                            BinOp::Add => ConstValue::Scalar(Scalar::from_u32(0)),
+                            BinOp::Mul => ConstValue::Scalar(Scalar::from_u32(1)),
                             _ => unimplemented!(
                                 "unsupported after set op: {:?} for {:?}",
                                 bin_op,
@@ -1728,8 +2375,8 @@ impl<'tcx> VectorResolver<'tcx> {
                         ))),
                     });
                 }
-                RemainStmt::SetAfterReduce(local, bin_op) => {
-                    let rhs = self.get_vector(&local).unwrap();
+                RemainStmt::SetAfterReduce(place, bin_op) => {
+                    let rhs = self.get_vector(&place).unwrap();
                     let func = match bin_op {
                         BinOp::Add => sym::simd_reduce_add_unordered,
                         _ => unimplemented!("unimplemented after set bin op: {:?}", bin_op),
@@ -1738,13 +2385,14 @@ impl<'tcx> VectorResolver<'tcx> {
                     let args = vec![Operand::Move(Place::from(rhs))];
                     body[remain_init].terminator = Some(Terminator {
                         source_info,
-                        kind: VectorFunc {
-                            func,
-                            args,
-                            destination: Some((Place::from(local), next)),
-                        },
+                        kind: VectorFunc { func, args, destination: Some((place, next)) },
                     });
                     remain_init = next;
+                }
+                RemainStmt::DeadAfter(local) => {
+                    body[remain_init]
+                        .statements
+                        .push(Statement { source_info, kind: StorageDead(local) });
                 }
             }
         }
@@ -1813,7 +2461,7 @@ impl<'tcx> VectorResolver<'tcx> {
                         body[location.block].statements[location.statement_index].kind.clone();
                     body[block].statements.push(Statement { source_info, kind });
                 }
-                AfterSet(place, rvalue, _) => {
+                AfterSet(place, rvalue, _, _) | AfterGet(place, rvalue, _, _) => {
                     body[block].statements.push(Statement {
                         source_info,
                         kind: Assign(Box::new((*place, rvalue.clone()))),
@@ -1824,14 +2472,14 @@ impl<'tcx> VectorResolver<'tcx> {
                     let mut rvalue = rvalue.clone();
                     bitset.iter().for_each(|local| {
                         if self.condi_vector.contains(&local) {
-                            let v = self.get_vector(&local).unwrap();
+                            let v = self.get_vector(&Place::from(local)).unwrap();
                             let mut ptv =
                                 PlaceToVector { tcx, temp: local, vector: v, inner: inside };
                             ptv.visit_rvalue(&mut rvalue, *location);
                         }
                     });
                     if self.condi_vector.contains(&place.local) {
-                        let v = self.get_vector(&place.local).unwrap();
+                        let v = self.get_vector(&place).unwrap();
                         let mut ptv =
                             PlaceToVector { tcx, temp: place.local, vector: v, inner: inside };
                         ptv.visit_place(
@@ -1917,7 +2565,7 @@ impl<'tcx> VectorResolver<'tcx> {
         let mut resolved_stmts =
             self.resolve_vector_section(tcx, body, outer_loop, vect_stmts.clone());
         self.resolve_vector_len(body, tcx, &resolved_stmts);
-        self.resolve_temp_to_vector(tcx, body, &mut resolved_stmts);
+        self.resolve_temp_to_vector(tcx, body, &condi_stmts, &mut resolved_stmts);
 
         self.resolved_stmts_pre = resolved_stmts.clone();
         self.resort_storage(&mut resolved_stmts);
@@ -1927,9 +2575,9 @@ impl<'tcx> VectorResolver<'tcx> {
         let mut to_inner_break = Vec::<BasicBlock>::new();
         let mut to_remain_init = Vec::<BasicBlock>::new();
 
-        // TODO: Add Storage statement for newly generated locals
+        // FIXME: Add Storage statement for newly generated locals
 
-        // TODO: Keep source_info as much as possible
+        // FIXME: Keep source_info as much as possible
 
         self.generate_condi_section(
             tcx,
@@ -1970,13 +2618,6 @@ impl<'tcx> VectorResolver<'tcx> {
                 _ => unimplemented!("wrong to inner break block stmt: {:?}", bb),
             }
         }
-        self.generate_remain_section(
-            tcx,
-            body,
-            &vect_stmts,
-            inner,
-            remain_init,
-            pre_remain_stmt,
-        );
+        self.generate_remain_section(tcx, body, &vect_stmts, inner, remain_init, pre_remain_stmt);
     }
 }

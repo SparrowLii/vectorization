@@ -58,7 +58,7 @@ impl<'tcx> TypeFoldable<'tcx> for Terminator<'tcx> {
                     fn_span,
                 }
             }
-            VectorFunc { func, args, destination} => {
+            VectorFunc { func, args, destination } => {
                 let dest = destination
                     .map(|(loc, dest)| (loc.try_fold_with(folder).map(|loc| (loc, dest))))
                     .transpose()?;
