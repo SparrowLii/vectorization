@@ -58,6 +58,17 @@ impl<'tcx> TypeFoldable<'tcx> for Terminator<'tcx> {
                     fn_span,
                 }
             }
+            VectorFunc { func, args, destination } => {
+                let dest = destination
+                    .map(|(loc, dest)| (loc.try_fold_with(folder).map(|loc| (loc, dest))))
+                    .transpose()?;
+
+                VectorFunc {
+                    func: func.try_fold_with(folder)?,
+                    args: args.try_fold_with(folder)?,
+                    destination: dest,
+                }
+            }
             Assert { cond, expected, msg, target, cleanup } => {
                 use AssertKind::*;
                 let msg = match msg {
@@ -113,6 +124,13 @@ impl<'tcx> TypeFoldable<'tcx> for Terminator<'tcx> {
             }
             Yield { ref value, .. } => value.visit_with(visitor),
             Call { ref func, ref args, ref destination, .. } => {
+                if let Some((ref loc, _)) = *destination {
+                    loc.visit_with(visitor)?;
+                };
+                func.visit_with(visitor)?;
+                args.visit_with(visitor)
+            }
+            VectorFunc { ref func, ref args, ref destination } => {
                 if let Some((ref loc, _)) = *destination {
                     loc.visit_with(visitor)?;
                 };

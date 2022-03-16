@@ -1419,6 +1419,7 @@ symbols! {
         var,
         variant_count,
         vec,
+        vectorization,
         version,
         vis,
         visible_private_types,

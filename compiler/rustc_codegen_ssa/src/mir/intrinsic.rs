@@ -568,7 +568,7 @@ impl<'a, 'tcx, Bx: BuilderMethods<'a, 'tcx>> FunctionCx<'a, 'tcx, Bx> {
 
             _ => {
                 // Need to use backend-specific things in the implementation.
-                bx.codegen_intrinsic_call(instance, fn_abi, args, llresult, span);
+                bx.codegen_intrinsic_call(name, callee_ty, fn_abi, args, llresult, span);
                 return;
             }
         };

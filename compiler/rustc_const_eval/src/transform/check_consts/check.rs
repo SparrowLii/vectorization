@@ -980,6 +980,10 @@ impl<'tcx> Visitor<'tcx> for Checker<'_, 'tcx> {
                 trace!("permitting call");
             }
 
+            TerminatorKind::VectorFunc { .. } => {
+                span_bug!(self.span, "vectorization is not supported")
+            }
+
             // Forbid all `Drop` terminators unless the place being dropped is a local with no
             // projections that cannot be `NeedsNonConstDrop`.
             TerminatorKind::Drop { place: dropped_place, .. }

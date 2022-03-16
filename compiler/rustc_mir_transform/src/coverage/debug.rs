@@ -828,6 +828,7 @@ pub(super) fn term_type(kind: &TerminatorKind<'_>) -> &'static str {
         TerminatorKind::Drop { .. } => "Drop",
         TerminatorKind::DropAndReplace { .. } => "DropAndReplace",
         TerminatorKind::Call { .. } => "Call",
+        TerminatorKind::VectorFunc { .. } => "VectorFunc",
         TerminatorKind::Assert { .. } => "Assert",
         TerminatorKind::Yield { .. } => "Yield",
         TerminatorKind::GeneratorDrop => "GeneratorDrop",

@@ -157,6 +157,7 @@ impl CoverageGraph {
                 | TerminatorKind::Drop { .. }
                 | TerminatorKind::DropAndReplace { .. }
                 | TerminatorKind::Call { .. }
+                | TerminatorKind::VectorFunc { .. }
                 | TerminatorKind::GeneratorDrop
                 | TerminatorKind::Assert { .. }
                 | TerminatorKind::FalseEdge { .. }

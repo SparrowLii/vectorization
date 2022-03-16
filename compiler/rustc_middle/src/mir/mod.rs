@@ -997,6 +997,8 @@ pub struct LocalDecl<'tcx> {
     ///  │ │← `drop(x)` // This accesses `x: u32`.
     /// ```
     pub source_info: SourceInfo,
+
+    pub vector: bool,
 }
 
 // `LocalDecl` is used a lot. Make sure it doesn't unintentionally get bigger.
@@ -1120,6 +1122,7 @@ impl<'tcx> LocalDecl<'tcx> {
             ty,
             user_ty: None,
             source_info,
+            vector: false,
         }
     }
 

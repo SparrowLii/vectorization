@@ -615,6 +615,20 @@ impl<'a> Conflicts<'a> {
                     }
                 }
             }
+            TerminatorKind::VectorFunc { func: _, args, destination: Some((dest_place, _)) } => {
+                // No arguments may overlap with the destination.
+                for arg in args.iter() {
+                    if let Some(place) = arg.place() {
+                        if !place.is_indirect() && !dest_place.is_indirect() {
+                            self.record_local_conflict(
+                                dest_place.local,
+                                place.local,
+                                "call dest/arg overlap",
+                            );
+                        }
+                    }
+                }
+            }
             TerminatorKind::InlineAsm {
                 template: _,
                 operands,
@@ -711,6 +725,7 @@ impl<'a> Conflicts<'a> {
 
             TerminatorKind::Goto { .. }
             | TerminatorKind::Call { destination: None, .. }
+            | TerminatorKind::VectorFunc { destination: None, .. }
             | TerminatorKind::SwitchInt { .. }
             | TerminatorKind::Resume
             | TerminatorKind::Abort
@@ -966,6 +981,7 @@ impl<'tcx> Visitor<'tcx> for BorrowCollector {
             TerminatorKind::Abort
             | TerminatorKind::Assert { .. }
             | TerminatorKind::Call { .. }
+            | TerminatorKind::VectorFunc { .. }
             | TerminatorKind::FalseEdge { .. }
             | TerminatorKind::FalseUnwind { .. }
             | TerminatorKind::GeneratorDrop
