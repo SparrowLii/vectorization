@@ -922,11 +922,6 @@ impl<'tcx> MutVisitor<'tcx> for Integrator<'_, 'tcx> {
                     *cleanup = self.cleanup_block;
                 }
             }
-            TerminatorKind::VectorFunc { ref mut destination, .. } => {
-                if let Some((_, ref mut tgt)) = *destination {
-                    *tgt = self.map_block(*tgt);
-                }
-            }
             TerminatorKind::Assert { ref mut target, ref mut cleanup, .. } => {
                 *target = self.map_block(*target);
                 if let Some(tgt) = *cleanup {

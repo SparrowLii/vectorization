@@ -13,15 +13,15 @@ use rustc_ast as ast;
 use rustc_ast::{InlineAsmOptions, InlineAsmTemplatePiece};
 use rustc_hir::lang_items::LangItem;
 use rustc_index::vec::Idx;
+use rustc_middle::mir::AssertKind;
 use rustc_middle::mir::{self, SwitchTargets};
-use rustc_middle::mir::{AssertKind, OUTERMOST_SOURCE_SCOPE};
 use rustc_middle::ty::layout::{HasTyCtxt, LayoutOf};
 use rustc_middle::ty::print::{with_no_trimmed_paths, with_no_visible_paths};
 use rustc_middle::ty::{self, Instance, Ty, TypeFoldable};
 use rustc_span::source_map::Span;
-use rustc_span::{sym, Symbol, DUMMY_SP};
+use rustc_span::{sym, Symbol};
 use rustc_symbol_mangling::typeid_for_fnabi;
-use rustc_target::abi::call::{ArgAbi, ArgAttributes, FnAbi, PassMode};
+use rustc_target::abi::call::{ArgAbi, FnAbi, PassMode};
 use rustc_target::abi::{self, HasDataLayout, WrappingRange};
 use rustc_target::spec::abi::Abi;
 
@@ -903,75 +903,6 @@ impl<'a, 'tcx, Bx: BuilderMethods<'a, 'tcx>> FunctionCx<'a, 'tcx, Bx> {
         );
     }
 
-    fn codegen_vector_terminator(
-        &mut self,
-        helper: TerminatorCodegenHelper<'tcx>,
-        mut bx: Bx,
-        terminator: &mir::Terminator<'tcx>,
-        func: Symbol,
-        args: &[mir::Operand<'tcx>],
-        destination: &Option<(mir::Place<'tcx>, mir::BasicBlock)>,
-    ) {
-        let source_info = terminator.source_info;
-        assert_eq!(source_info.scope, OUTERMOST_SOURCE_SCOPE);
-        let span = source_info.span;
-        assert_eq!(span, DUMMY_SP);
-
-        let args: Vec<_> = args.iter().map(|arg| self.codegen_operand(&mut bx, arg)).collect();
-
-        let ret_ly = match func {
-            sym::simd_fsqrt | sym::simd_shr | sym::simd_and | sym::simd_add | sym::simd_mul => {
-                args[0].layout
-            }
-            sym::simd_reduce_add_unordered => {
-                if let ty::Array(ele_ty, _) = args[0].layout.ty.kind() {
-                    bx.cx().layout_of(ele_ty)
-                } else {
-                    bug!("non vector type: {:?}", args[0])
-                }
-            }
-            sym::simd_cast => {
-                let des = destination.unwrap().0.local;
-                if let LocalRef::Place(p_ref) = self.locals[des] {
-                    p_ref.layout
-                } else {
-                    unimplemented!("cannot get layout of return value")
-                }
-            }
-            _ => unimplemented!("{:?} is not supported in vectorization now", func),
-        };
-
-        let ret_abi =
-            ArgAbi { layout: ret_ly, pad: None, mode: PassMode::Direct(ArgAttributes::new()) };
-        let ret_dest = if let Some((dest, _)) = *destination {
-            self.make_return_dest(
-                &mut bx,
-                dest,
-                &ret_abi,
-                &mut Vec::with_capacity(args.len()),
-                true,
-            )
-        } else {
-            bug!("wrong return dest")
-        };
-        let dest = match ret_dest {
-            ReturnDest::IndirectOperand(dst, _) | ReturnDest::Store(dst) => dst.llval,
-            _ => bug!("wrong return dest"),
-        };
-
-        bx.codegen_vector_func(func, &args, ret_ly, dest, span);
-
-        if let ReturnDest::IndirectOperand(dst, _) = ret_dest {
-            self.store_return(&mut bx, ret_dest, &ret_abi, dst.llval);
-        }
-
-        if let Some((_, target)) = *destination {
-            helper.funclet_br(self, &mut bx, target);
-        } else {
-            bx.unreachable();
-        }
-    }
-
     fn codegen_asm_terminator(
         &mut self,
         helper: TerminatorCodegenHelper<'tcx>,
@@ -1137,9 +1068,6 @@ impl<'a, 'tcx, Bx: BuilderMethods<'a, 'tcx>> FunctionCx<'a, 'tcx, Bx> {
                     cleanup,
                     fn_span,
                 );
-            }
-            mir::TerminatorKind::VectorFunc { func, ref args, ref destination } => {
-                self.codegen_vector_terminator(helper, bx, terminator, func, args, destination);
             }
             mir::TerminatorKind::GeneratorDrop | mir::TerminatorKind::Yield { .. } => {
                 bug!("generator ops in codegen")

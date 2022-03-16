@@ -266,7 +266,6 @@ pub fn terminator_kind_name(term: &Terminator<'_>) -> &'static str {
         Drop { .. } => "Drop",
         DropAndReplace { .. } => "DropAndReplace",
         Call { .. } => "Call",
-        VectorFunc { .. } => "VectorFunc",
         Assert { .. } => "Assert",
         Yield { .. } => "Yield",
         GeneratorDrop => "GeneratorDrop",

@@ -550,23 +550,6 @@ macro_rules! make_mir_visitor {
                         }
                     }
 
-                    TerminatorKind::VectorFunc {
-                        func: _,
-                        args,
-                        destination,
-                    } => {
-                        for arg in args {
-                            self.visit_operand(arg, location);
-                        }
-                        if let Some((destination, _)) = destination {
-                            self.visit_place(
-                                destination,
-                                PlaceContext::MutatingUse(MutatingUseContext::Call),
-                                location
-                            );
-                        }
-                    }
-
                     TerminatorKind::Assert {
                         cond,
                         expected: _,
@@ -843,7 +826,6 @@ macro_rules! make_mir_visitor {
                     internal: _,
                     local_info: _,
                     is_block_tail: _,
-                    vector: _,
                 } = local_decl;
 
                 self.visit_ty(ty, TyContext::LocalDecl {

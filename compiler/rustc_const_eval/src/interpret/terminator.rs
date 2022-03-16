@@ -117,10 +117,6 @@ impl<'mir, 'tcx: 'mir, M: Machine<'mir, 'tcx>> InterpCx<'mir, 'tcx, M> {
                 }
             }
 
-            VectorFunc { func: _, args: _, destination: _ } => {
-                throw_unsup_format!("vectorization is not supported")
-            }
-
             Drop { place, target, unwind } => {
                 let place = self.eval_place(place)?;
                 let ty = place.layout.ty;

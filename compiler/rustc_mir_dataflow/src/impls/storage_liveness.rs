@@ -177,10 +177,6 @@ impl<'mir, 'tcx> crate::GenKillAnalysis<'tcx> for MaybeRequiresStorage<'mir, 'tc
                 trans.gen(place.local);
             }
 
-            TerminatorKind::VectorFunc { destination: Some((place, _)), .. } => {
-                trans.gen(place.local);
-            }
-
             // Note that we do *not* gen the `resume_arg` of `Yield` terminators. The reason for
             // that is that a `yield` will return from the function, and `resume_arg` is written
             // only when the generator is later resumed. Unlike `Call`, this doesn't require the
@@ -207,7 +203,6 @@ impl<'mir, 'tcx> crate::GenKillAnalysis<'tcx> for MaybeRequiresStorage<'mir, 'tc
             // Nothing to do for these. Match exhaustively so this fails to compile when new
             // variants are added.
             TerminatorKind::Call { destination: None, .. }
-            | TerminatorKind::VectorFunc { destination: None, .. }
             | TerminatorKind::Abort
             | TerminatorKind::Assert { .. }
             | TerminatorKind::Drop { .. }
@@ -238,10 +233,6 @@ impl<'mir, 'tcx> crate::GenKillAnalysis<'tcx> for MaybeRequiresStorage<'mir, 'tc
                 trans.kill(place.local);
             }
 
-            TerminatorKind::VectorFunc { destination: Some((place, _)), .. } => {
-                trans.kill(place.local);
-            }
-
             // The same applies to InlineAsm outputs.
             TerminatorKind::InlineAsm { ref operands, .. } => {
                 CallReturnPlaces::InlineAsm(operands).for_each(|place| trans.kill(place.local));
@@ -250,7 +241,6 @@ impl<'mir, 'tcx> crate::GenKillAnalysis<'tcx> for MaybeRequiresStorage<'mir, 'tc
             // Nothing to do for these. Match exhaustively so this fails to compile when new
             // variants are added.
             TerminatorKind::Call { destination: None, .. }
-            | TerminatorKind::VectorFunc { destination: None, .. }
             | TerminatorKind::Yield { .. }
             | TerminatorKind::Abort
             | TerminatorKind::Assert { .. }

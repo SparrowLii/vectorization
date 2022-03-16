@@ -3420,7 +3420,7 @@ impl<'a> Resolver<'a> {
             }
 
             if let Res::Def(def::DefKind::Fn, def_id) = partial_res.base_res() {
-                // We only support cross-crate argument rewriting. Uses`
+                // We only support cross-crate argument rewriting. Uses
                 // within the same crate should be updated to use the new
                 // const generics style.
                 if def_id.is_local() {

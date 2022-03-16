@@ -460,37 +460,6 @@ impl<'a, 'tcx> Visitor<'tcx> for TypeChecker<'a, 'tcx> {
                     );
                 }
             }
-            TerminatorKind::VectorFunc { func: _, args, destination } => {
-                if let Some((_, target)) = destination {
-                    self.check_edge(location, *target, EdgeKind::Normal);
-                }
-
-                // The call destination place and Operand::Move place used as an argument might be
-                // passed by a reference to the callee. Consequently they must be non-overlapping.
-                // Currently this simply checks for duplicate places.
-                self.place_cache.clear();
-                if let Some((destination, _)) = destination {
-                    self.place_cache.push(destination.as_ref());
-                }
-                for arg in args {
-                    if let Operand::Move(place) = arg {
-                        self.place_cache.push(place.as_ref());
-                    }
-                }
-                let all_len = self.place_cache.len();
-                self.place_cache.sort_unstable();
-                self.place_cache.dedup();
-                let has_duplicates = all_len != self.place_cache.len();
-                if has_duplicates {
-                    self.fail(
-                        location,
-                        format!(
-                            "encountered overlapping memory in `Call` terminator: {:?}",
-                            terminator.kind,
-                        ),
-                    );
-                }
-            }
             TerminatorKind::Assert { cond, target, cleanup, .. } => {
                 let cond_ty = cond.ty(&self.body.local_decls, self.tcx);
                 if cond_ty != self.tcx.types.bool {

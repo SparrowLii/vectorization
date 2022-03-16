@@ -453,11 +453,6 @@ pub const BUILTIN_ATTRIBUTES: &[BuiltinAttribute] = &[
         as `const`, which may be removed or renamed in the future."
     ),
 
-    // vectorization
-    rustc_attr!(
-        vectorization, Normal, template!(Word), WarnFollowing, experimental!(vectorization)
-    ),
-
     // ==========================================================================
     // Internal attributes: Stability, deprecation, and unsafe:
     // ==========================================================================

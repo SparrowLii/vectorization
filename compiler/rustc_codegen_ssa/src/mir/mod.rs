@@ -15,7 +15,6 @@ use rustc_index::vec::IndexVec;
 use self::debuginfo::{FunctionDebugContext, PerLocalVarDebugInfo};
 use self::place::PlaceRef;
 use rustc_middle::mir::traversal;
-use rustc_target::abi::{Abi, FieldsShape, Layout, Variants};
 
 use self::operand::{OperandRef, OperandValue};
 
@@ -209,38 +208,7 @@ pub fn codegen_mir<'a, 'tcx, Bx: BuilderMethods<'a, 'tcx>>(
 
         let mut allocate_local = |local| {
             let decl = &mir.local_decls[local];
-            let layout = if decl.vector {
-                let TyAndLayout {
-                    ty,
-                    layout: Layout { variants, fields, abi: _, largest_niche: _, align: _, size },
-                } = bx.layout_of(fx.monomorphize(decl.ty));
-                let (
-                    ty::Array(elem, _),
-                    Variants::Single { index },
-                    FieldsShape::Array { stride, count },
-                ) = (ty.kind(), variants, fields) else {
-                    bug!("wrong layout for vector locals : {:?}, {:?}, {:?}, {:?}",local, ty, variants, fields)
-                };
-                let e_ly = bx.layout_of(elem).layout;
-                let Abi::Scalar(e_abi) = e_ly.abi else {
-                    bug!("vectorization with a non-primitive-scalar (integer/float/pointer) \
-                    element type `{}`", elem)
-                };
-                let align = bx.data_layout().vector_align(*size);
-                TyAndLayout {
-                    ty,
-                    layout: bx.tcx().intern_layout(Layout {
-                        variants: Variants::Single { index: *index },
-                        fields: FieldsShape::Array { stride: *stride, count: *count },
-                        abi: Abi::Vector { element: e_abi, count: *count },
-                        largest_niche: e_ly.largest_niche,
-                        size: size.align_to(align.abi),
-                        align,
-                    }),
-                }
-            } else {
-                bx.layout_of(fx.monomorphize(decl.ty))
-            };
+            let layout = bx.layout_of(fx.monomorphize(decl.ty));
             assert!(!layout.ty.has_erasable_regions(cx.tcx()));
 
             if local == mir::RETURN_PLACE && fx.fn_abi.ret.is_indirect() {
