@@ -1268,6 +1268,7 @@ impl<'tcx> MutVisitor<'tcx> for ConstPropagator<'_, 'tcx> {
             // NOTE: because LLVM codegen gives slight performance regressions with it, so this is
             // gated on `mir_opt_level=3`.
             TerminatorKind::Call { .. } => {}
+            TerminatorKind::VectorFunc { .. } => {}
         }
 
         // We remove all Locals which are restricted in propagation to their containing blocks and

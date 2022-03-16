@@ -1,0 +1,384 @@
+// MIR for `var1` after Vectorize
+
+fn var1(_1: &[f32]) -> f32 {
+    debug arr => _1;                     // in scope 0 at $DIR/var.rs:28:9: 28:12
+    let mut _0: f32;                     // return place in scope 0 at $DIR/var.rs:28:25: 28:28
+    let mut _2: f32;                     // in scope 0 at $DIR/var.rs:29:9: 29:19
+    let mut _5: usize;                   // in scope 0 at $DIR/var.rs:31:15: 31:24
+    let mut _6: &[f32];                  // in scope 0 at $DIR/var.rs:31:15: 31:24
+    let mut _7: std::slice::Iter<f32>;   // in scope 0 at $DIR/var.rs:32:14: 32:17
+    let mut _8: &[f32];                  // in scope 0 at $DIR/var.rs:32:14: 32:17
+    let mut _10: std::option::Option<&f32>; // in scope 0 at $DIR/var.rs:32:14: 32:17
+    let mut _11: &mut std::slice::Iter<f32>; // in scope 0 at $DIR/var.rs:32:14: 32:17
+    let mut _12: &mut std::slice::Iter<f32>; // in scope 0 at $DIR/var.rs:32:14: 32:17
+    let mut _13: isize;                  // in scope 0 at $DIR/var.rs:32:5: 35:6
+    let mut _15: &mut f32;               // in scope 0 at $DIR/var.rs:33:9: 33:12
+    let mut _16: &f32;                   // in scope 0 at $DIR/var.rs:33:16: 33:17
+    let mut _17: f32;                    // in scope 0 at $DIR/var.rs:34:19: 34:24
+    let mut _18: &f32;                   // in scope 0 at $DIR/var.rs:34:19: 34:20
+    let mut _19: &f32;                   // in scope 0 at $DIR/var.rs:34:23: 34:24
+    let mut _21: f32;                    // in scope 0 at $DIR/var.rs:36:15: 36:18
+    let mut _22: f32;                    // in scope 0 at $DIR/var.rs:36:21: 36:24
+    let mut _23: f32;                    // in scope 0 at $DIR/var.rs:37:5: 37:32
+    let mut _24: f32;                    // in scope 0 at $DIR/var.rs:37:6: 37:19
+    let mut _25: f32;                    // in scope 0 at $DIR/var.rs:37:6: 37:12
+    let mut _26: f32;                    // in scope 0 at $DIR/var.rs:37:16: 37:19
+    let mut _27: f32;                    // in scope 0 at $DIR/var.rs:37:22: 37:31
+    let mut _28: f32;                    // in scope 0 at $DIR/var.rs:37:22: 37:25
+    let mut _29: f32;                    // in scope 0 at $DIR/var.rs:37:28: 37:31
+    let mut _40: usize;                  // in scope 0 at no-location
+    let mut _41: [&f32; 32];             // in scope 0 at no-location
+    let mut _42: [f32; 32];              // in scope 0 at no-location
+    let mut _43: [f32; 32];              // in scope 0 at no-location
+    let mut _44: [f32; 32];              // in scope 0 at no-location
+    let mut _45: [f32; 32];              // in scope 0 at no-location
+    let mut _46: [f32; 32];              // in scope 0 at no-location
+    let mut _47: [f32; 32];              // in scope 0 at no-location
+    let mut _48: usize;                  // in scope 0 at no-location
+    let mut _49: bool;                   // in scope 0 at no-location
+    let mut _50: usize;                  // in scope 0 at no-location
+    let mut _51: bool;                   // in scope 0 at no-location
+    let mut _52: usize;                  // in scope 0 at no-location
+    let mut _53: bool;                   // in scope 0 at no-location
+    let mut _54: usize;                  // in scope 0 at no-location
+    let mut _55: usize;                  // in scope 0 at no-location
+    let mut _56: usize;                  // in scope 0 at no-location
+    let mut _57: bool;                   // in scope 0 at no-location
+    scope 1 {
+        debug sq_sum => _2;              // in scope 1 at $DIR/var.rs:29:9: 29:19
+        let mut _3: f32;                 // in scope 1 at $DIR/var.rs:30:9: 30:16
+        scope 2 {
+            debug sum => _3;             // in scope 2 at $DIR/var.rs:30:9: 30:16
+            let _4: f32;                 // in scope 2 at $DIR/var.rs:31:9: 31:12
+            scope 3 {
+                debug len => _4;         // in scope 3 at $DIR/var.rs:31:9: 31:12
+                let mut _9: std::slice::Iter<f32>; // in scope 3 at $DIR/var.rs:32:14: 32:17
+                let _20: f32;            // in scope 3 at $DIR/var.rs:36:9: 36:12
+                scope 4 {
+                    debug iter => _9;    // in scope 4 at $DIR/var.rs:32:14: 32:17
+                    let _14: &f32;       // in scope 4 at $DIR/var.rs:32:9: 32:10
+                    scope 5 {
+                        debug i => _14;  // in scope 5 at $DIR/var.rs:32:9: 32:10
+                        scope 9 (inlined <f32 as AddAssign<&f32>>::add_assign) { // at $DIR/var.rs:33:9: 33:17
+                            debug self => _15; // in scope 9 at $DIR/var.rs:33:9: 33:17
+                            debug other => _16; // in scope 9 at $DIR/var.rs:33:9: 33:17
+                            let mut _32: &mut f32; // in scope 9 at $DIR/var.rs:33:9: 33:17
+                            let mut _33: f32; // in scope 9 at $DIR/var.rs:33:9: 33:17
+                            scope 10 (inlined <f32 as AddAssign>::add_assign) { // at $DIR/var.rs:33:9: 33:17
+                                debug self => _32; // in scope 10 at $DIR/var.rs:33:9: 33:17
+                                debug other => _33; // in scope 10 at $DIR/var.rs:33:9: 33:17
+                                let mut _34: f32; // in scope 10 at $DIR/var.rs:33:9: 33:17
+                            }
+                        }
+                        scope 13 (inlined <&f32 as Mul>::mul) { // at $DIR/var.rs:34:19: 34:24
+                            debug self => _18; // in scope 13 at $DIR/var.rs:34:19: 34:24
+                            debug other => _19; // in scope 13 at $DIR/var.rs:34:19: 34:24
+                            let mut _36: f32; // in scope 13 at $DIR/var.rs:34:19: 34:24
+                            let mut _37: f32; // in scope 13 at $DIR/var.rs:34:19: 34:24
+                            scope 14 (inlined <f32 as Mul>::mul) { // at $DIR/var.rs:34:19: 34:24
+                                debug self => _36; // in scope 14 at $DIR/var.rs:34:19: 34:24
+                                debug other => _37; // in scope 14 at $DIR/var.rs:34:19: 34:24
+                                let mut _38: f32; // in scope 14 at $DIR/var.rs:34:19: 34:24
+                                let mut _39: f32; // in scope 14 at $DIR/var.rs:34:19: 34:24
+                            }
+                        }
+                    }
+                }
+                scope 6 {
+                    debug ave => _20;    // in scope 6 at $DIR/var.rs:36:9: 36:12
+                    scope 11 (inlined f32::<impl f32>::sqrt) { // at $DIR/var.rs:37:5: 37:39
+                        debug self => _23; // in scope 11 at $DIR/var.rs:37:5: 37:39
+                        let mut _35: f32; // in scope 11 at $DIR/var.rs:37:5: 37:39
+                        scope 12 {
+                        }
+                    }
+                }
+                scope 7 (inlined core::slice::iter::<impl IntoIterator for &[f32]>::into_iter) { // at $DIR/var.rs:32:14: 32:17
+                    debug self => _8;    // in scope 7 at $DIR/var.rs:32:14: 32:17
+                    let mut _30: &[f32]; // in scope 7 at $DIR/var.rs:32:14: 32:17
+                    scope 8 (inlined core::slice::<impl [f32]>::iter) { // at $DIR/var.rs:32:14: 32:17
+                        debug self => _30; // in scope 8 at $DIR/var.rs:32:14: 32:17
+                        let mut _31: &[f32]; // in scope 8 at $DIR/var.rs:32:14: 32:17
+                    }
+                }
+            }
+        }
+    }
+
+    bb0: {
+        StorageLive(_2);                 // scope 0 at $DIR/var.rs:29:9: 29:19
+        _2 = const 0f32;                 // scope 0 at $DIR/var.rs:29:22: 29:24
+        StorageLive(_3);                 // scope 1 at $DIR/var.rs:30:9: 30:16
+        _3 = const 0f32;                 // scope 1 at $DIR/var.rs:30:19: 30:21
+        StorageLive(_4);                 // scope 2 at $DIR/var.rs:31:9: 31:12
+        StorageLive(_5);                 // scope 2 at $DIR/var.rs:31:15: 31:24
+        StorageLive(_6);                 // scope 2 at $DIR/var.rs:31:15: 31:24
+        _6 = _1;                         // scope 2 at $DIR/var.rs:31:15: 31:24
+        _5 = Len((*_6));                 // scope 2 at $DIR/var.rs:31:15: 31:24
+        StorageDead(_6);                 // scope 2 at $DIR/var.rs:31:23: 31:24
+        _4 = move _5 as f32 (Misc);      // scope 2 at $DIR/var.rs:31:15: 31:31
+        StorageDead(_5);                 // scope 2 at $DIR/var.rs:31:30: 31:31
+        StorageLive(_7);                 // scope 3 at $DIR/var.rs:32:14: 32:17
+        StorageLive(_8);                 // scope 3 at $DIR/var.rs:32:14: 32:17
+        _8 = _1;                         // scope 3 at $DIR/var.rs:32:14: 32:17
+        StorageLive(_30);                // scope 7 at $DIR/var.rs:32:14: 32:17
+        _30 = _8;                        // scope 7 at $DIR/var.rs:32:14: 32:17
+        StorageLive(_31);                // scope 8 at $DIR/var.rs:32:14: 32:17
+        _31 = _30;                       // scope 8 at $DIR/var.rs:32:14: 32:17
+        _7 = std::slice::Iter::<f32>::new(move _31) -> bb2; // scope 8 at $DIR/var.rs:32:14: 32:17
+                                         // mir::Constant
+                                         // + span: $DIR/var.rs:32:14: 32:17
+                                         // + user_ty: UserType(0)
+                                         // + literal: Const { ty: fn(&[f32]) -> std::slice::Iter<f32> {std::slice::Iter::<f32>::new}, val: Value(Scalar(<ZST>)) }
+    }
+
+    bb1: {
+        StorageDead(_12);                // scope 4 at $DIR/var.rs:35:5: 35:6
+        StorageDead(_10);                // scope 4 at $DIR/var.rs:35:5: 35:6
+        StorageDead(_9);                 // scope 3 at $DIR/var.rs:35:5: 35:6
+        StorageDead(_7);                 // scope 3 at $DIR/var.rs:35:5: 35:6
+        StorageLive(_20);                // scope 3 at $DIR/var.rs:36:9: 36:12
+        StorageLive(_21);                // scope 3 at $DIR/var.rs:36:15: 36:18
+        _21 = _3;                        // scope 3 at $DIR/var.rs:36:15: 36:18
+        StorageLive(_22);                // scope 3 at $DIR/var.rs:36:21: 36:24
+        _22 = _4;                        // scope 3 at $DIR/var.rs:36:21: 36:24
+        _20 = Div(move _21, move _22);   // scope 3 at $DIR/var.rs:36:15: 36:24
+        StorageDead(_22);                // scope 3 at $DIR/var.rs:36:23: 36:24
+        StorageDead(_21);                // scope 3 at $DIR/var.rs:36:23: 36:24
+        StorageLive(_23);                // scope 6 at $DIR/var.rs:37:5: 37:32
+        StorageLive(_24);                // scope 6 at $DIR/var.rs:37:6: 37:19
+        StorageLive(_25);                // scope 6 at $DIR/var.rs:37:6: 37:12
+        _25 = _2;                        // scope 6 at $DIR/var.rs:37:6: 37:12
+        StorageLive(_26);                // scope 6 at $DIR/var.rs:37:16: 37:19
+        _26 = _4;                        // scope 6 at $DIR/var.rs:37:16: 37:19
+        _24 = Div(move _25, move _26);   // scope 6 at $DIR/var.rs:37:6: 37:19
+        StorageDead(_26);                // scope 6 at $DIR/var.rs:37:18: 37:19
+        StorageDead(_25);                // scope 6 at $DIR/var.rs:37:18: 37:19
+        StorageLive(_27);                // scope 6 at $DIR/var.rs:37:22: 37:31
+        StorageLive(_28);                // scope 6 at $DIR/var.rs:37:22: 37:25
+        _28 = _20;                       // scope 6 at $DIR/var.rs:37:22: 37:25
+        StorageLive(_29);                // scope 6 at $DIR/var.rs:37:28: 37:31
+        _29 = _20;                       // scope 6 at $DIR/var.rs:37:28: 37:31
+        _27 = Mul(move _28, move _29);   // scope 6 at $DIR/var.rs:37:22: 37:31
+        StorageDead(_29);                // scope 6 at $DIR/var.rs:37:30: 37:31
+        StorageDead(_28);                // scope 6 at $DIR/var.rs:37:30: 37:31
+        _23 = Sub(move _24, move _27);   // scope 6 at $DIR/var.rs:37:5: 37:32
+        StorageDead(_27);                // scope 6 at $DIR/var.rs:37:31: 37:32
+        StorageDead(_24);                // scope 6 at $DIR/var.rs:37:31: 37:32
+        StorageLive(_35);                // scope 12 at $DIR/var.rs:37:5: 37:39
+        _35 = _23;                       // scope 12 at $DIR/var.rs:37:5: 37:39
+        _0 = sqrtf32(move _35) -> bb3;   // scope 12 at $DIR/var.rs:37:5: 37:39
+                                         // mir::Constant
+                                         // + span: $DIR/var.rs:37:5: 37:39
+                                         // + literal: Const { ty: unsafe extern "rust-intrinsic" fn(f32) -> f32 {std::intrinsics::sqrtf32}, val: Value(Scalar(<ZST>)) }
+    }
+
+    bb2: {
+        StorageDead(_31);                // scope 8 at $DIR/var.rs:32:14: 32:17
+        StorageDead(_30);                // scope 7 at $DIR/var.rs:32:14: 32:17
+        StorageDead(_8);                 // scope 3 at $DIR/var.rs:32:16: 32:17
+        StorageLive(_9);                 // scope 3 at $DIR/var.rs:32:14: 32:17
+        _9 = move _7;                    // scope 3 at $DIR/var.rs:32:14: 32:17
+        _42 = [const 0f32; 32];          // scope 0 at no-location
+        _47 = [const 0f32; 32];          // scope 0 at no-location
+        goto -> bb4;                     // scope 4 at $DIR/var.rs:32:5: 35:6
+    }
+
+    bb3: {
+        StorageDead(_35);                // scope 12 at $DIR/var.rs:37:5: 37:39
+        StorageDead(_23);                // scope 6 at $DIR/var.rs:37:38: 37:39
+        StorageDead(_20);                // scope 3 at $DIR/var.rs:38:1: 38:2
+        StorageDead(_4);                 // scope 2 at $DIR/var.rs:38:1: 38:2
+        StorageDead(_3);                 // scope 1 at $DIR/var.rs:38:1: 38:2
+        StorageDead(_2);                 // scope 0 at $DIR/var.rs:38:1: 38:2
+        return;                          // scope 0 at $DIR/var.rs:38:2: 38:2
+    }
+
+    bb4: {
+        _40 = const 0_usize;             // scope 0 at no-location
+        goto -> bb5;                     // scope 0 at no-location
+    }
+
+    bb5: {
+        _48 = _40;                       // scope 0 at no-location
+        _49 = Ge(move _48, const 32_usize); // scope 0 at no-location
+        switchInt(move _49) -> [false: bb6, otherwise: bb9]; // scope 0 at no-location
+    }
+
+    bb6: {
+        StorageLive(_10);                // scope 4 at $DIR/var.rs:32:14: 32:17
+        StorageLive(_11);                // scope 4 at $DIR/var.rs:32:14: 32:17
+        StorageLive(_12);                // scope 4 at $DIR/var.rs:32:14: 32:17
+        _12 = &mut _9;                   // scope 0 at no-location
+        _11 = &mut (*_12);               // scope 0 at no-location
+        _10 = <std::slice::Iter<f32> as Iterator>::next(move _11) -> bb7; // scope 0 at no-location
+                                         // mir::Constant
+                                         // + span: $DIR/var.rs:32:14: 32:17
+                                         // + literal: Const { ty: for<'r> fn(&'r mut std::slice::Iter<f32>) -> std::option::Option<<std::slice::Iter<f32> as std::iter::Iterator>::Item> {<std::slice::Iter<f32> as std::iter::Iterator>::next}, val: Value(Scalar(<ZST>)) }
+    }
+
+    bb7: {
+        StorageDead(_11);                // scope 4 at $DIR/var.rs:32:16: 32:17
+        _13 = discriminant(_10);         // scope 0 at no-location
+        switchInt(move _13) -> [0_isize: bb19, otherwise: bb8]; // scope 0 at no-location
+    }
+
+    bb8: {
+        _41[_40] = ((_10 as Some).0: &f32); // scope 0 at no-location
+        StorageDead(_10);                // scope 4 at $DIR/var.rs:35:5: 35:6
+        _40 = Add(_40, const 1_usize);   // scope 0 at no-location
+        goto -> bb5;                     // scope 0 at no-location
+    }
+
+    bb9: {
+        StorageLive(_14);                // scope 0 at no-location
+        StorageLive(_15);                // scope 0 at no-location
+        StorageLive(_16);                // scope 0 at no-location
+        StorageLive(_32);                // scope 0 at no-location
+        StorageLive(_33);                // scope 0 at no-location
+        StorageLive(_34);                // scope 0 at no-location
+        _40 = const 0_usize;             // scope 0 at no-location
+        goto -> bb10;                    // scope 0 at no-location
+    }
+
+    bb10: {
+        _50 = _40;                       // scope 0 at no-location
+        _51 = Ge(move _50, const 32_usize); // scope 0 at no-location
+        switchInt(move _51) -> [false: bb11, otherwise: bb12]; // scope 0 at no-location
+    }
+
+    bb11: {
+        _15 = &mut _3;                   // scope 0 at no-location
+        _16 = _41[_40];                  // scope 0 at no-location
+        _32 = &mut (*_15);               // scope 0 at no-location
+        _33 = (*_16);                    // scope 0 at no-location
+        _43[_40] = _33;                  // scope 0 at no-location
+        _40 = Add(_40, const 1_usize);   // scope 0 at no-location
+        goto -> bb10;                    // scope 0 at no-location
+    }
+
+    bb12: {
+        _42 = "simd_add"(_42, move _43) -> bb13; // scope 0 at no-location
+    }
+
+    bb13: {
+        StorageDead(_34);                // scope 0 at no-location
+        StorageDead(_33);                // scope 0 at no-location
+        StorageDead(_16);                // scope 0 at no-location
+        StorageLive(_17);                // scope 0 at no-location
+        StorageLive(_18);                // scope 0 at no-location
+        StorageLive(_19);                // scope 0 at no-location
+        StorageLive(_36);                // scope 0 at no-location
+        StorageLive(_37);                // scope 0 at no-location
+        StorageLive(_38);                // scope 0 at no-location
+        StorageLive(_39);                // scope 0 at no-location
+        _40 = const 0_usize;             // scope 0 at no-location
+        goto -> bb14;                    // scope 0 at no-location
+    }
+
+    bb14: {
+        _52 = _40;                       // scope 0 at no-location
+        _53 = Ge(move _52, const 32_usize); // scope 0 at no-location
+        switchInt(move _53) -> [false: bb15, otherwise: bb16]; // scope 0 at no-location
+    }
+
+    bb15: {
+        _18 = _41[_40];                  // scope 0 at no-location
+        _19 = _41[_40];                  // scope 0 at no-location
+        _36 = (*_18);                    // scope 0 at no-location
+        _37 = (*_19);                    // scope 0 at no-location
+        _45[_40] = _36;                  // scope 0 at no-location
+        _46[_40] = _37;                  // scope 0 at no-location
+        _40 = Add(_40, const 1_usize);   // scope 0 at no-location
+        goto -> bb14;                    // scope 0 at no-location
+    }
+
+    bb16: {
+        _44 = "simd_mul"(move _45, move _46) -> bb17; // scope 0 at no-location
+    }
+
+    bb17: {
+        StorageDead(_39);                // scope 0 at no-location
+        StorageDead(_38);                // scope 0 at no-location
+        StorageDead(_37);                // scope 0 at no-location
+        StorageDead(_36);                // scope 0 at no-location
+        StorageDead(_19);                // scope 0 at no-location
+        StorageDead(_18);                // scope 0 at no-location
+        _47 = "simd_add"(_47, move _44) -> bb18; // scope 0 at no-location
+    }
+
+    bb18: {
+        StorageDead(_17);                // scope 0 at no-location
+        StorageDead(_14);                // scope 0 at no-location
+        StorageDead(_12);                // scope 0 at no-location
+        goto -> bb4;                     // scope 0 at no-location
+    }
+
+    bb19: {
+        (*_32) = "simd_reduce_add_unordered"(move _42) -> bb20; // scope 0 at no-location
+    }
+
+    bb20: {
+        StorageDead(_32);                // scope 0 at no-location
+        StorageDead(_15);                // scope 0 at no-location
+        _2 = "simd_reduce_add_unordered"(move _47) -> bb21; // scope 0 at no-location
+    }
+
+    bb21: {
+        _54 = const 0_usize;             // scope 0 at no-location
+        goto -> bb22;                    // scope 0 at no-location
+    }
+
+    bb22: {
+        _55 = _54;                       // scope 0 at no-location
+        _56 = _40;                       // scope 0 at no-location
+        _57 = Ge(move _55, move _56);    // scope 0 at no-location
+        switchInt(move _57) -> [false: bb23, otherwise: bb1]; // scope 0 at no-location
+    }
+
+    bb23: {
+        StorageLive(_14);                // scope 0 at no-location
+        StorageLive(_15);                // scope 0 at no-location
+        _15 = &mut _3;                   // scope 0 at no-location
+        StorageLive(_16);                // scope 0 at no-location
+        _16 = _41[_54];                  // scope 0 at no-location
+        StorageLive(_32);                // scope 0 at no-location
+        _32 = &mut (*_15);               // scope 0 at no-location
+        StorageLive(_33);                // scope 0 at no-location
+        _33 = (*_16);                    // scope 0 at no-location
+        StorageLive(_34);                // scope 0 at no-location
+        _34 = _33;                       // scope 0 at no-location
+        (*_32) = Add((*_32), move _34);  // scope 0 at no-location
+        StorageDead(_34);                // scope 0 at no-location
+        StorageDead(_33);                // scope 0 at no-location
+        StorageDead(_32);                // scope 0 at no-location
+        StorageDead(_16);                // scope 0 at no-location
+        StorageDead(_15);                // scope 0 at no-location
+        StorageLive(_17);                // scope 0 at no-location
+        StorageLive(_18);                // scope 0 at no-location
+        _18 = _41[_54];                  // scope 0 at no-location
+        StorageLive(_19);                // scope 0 at no-location
+        _19 = _41[_54];                  // scope 0 at no-location
+        StorageLive(_36);                // scope 0 at no-location
+        _36 = (*_18);                    // scope 0 at no-location
+        StorageLive(_37);                // scope 0 at no-location
+        _37 = (*_19);                    // scope 0 at no-location
+        StorageLive(_38);                // scope 0 at no-location
+        _38 = _36;                       // scope 0 at no-location
+        StorageLive(_39);                // scope 0 at no-location
+        _39 = _37;                       // scope 0 at no-location
+        _17 = Mul(move _38, move _39);   // scope 0 at no-location
+        StorageDead(_39);                // scope 0 at no-location
+        StorageDead(_38);                // scope 0 at no-location
+        StorageDead(_37);                // scope 0 at no-location
+        StorageDead(_36);                // scope 0 at no-location
+        StorageDead(_19);                // scope 0 at no-location
+        StorageDead(_18);                // scope 0 at no-location
+        _2 = Add(_2, move _17);          // scope 0 at no-location
+        StorageDead(_17);                // scope 0 at no-location
+        StorageDead(_14);                // scope 0 at no-location
+        StorageDead(_12);                // scope 0 at no-location
+        _54 = Add(_54, const 1_usize);   // scope 0 at no-location
+        goto -> bb22;                    // scope 0 at no-location
+    }
+}

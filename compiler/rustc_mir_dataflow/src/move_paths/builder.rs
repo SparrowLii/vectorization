@@ -401,6 +401,19 @@ impl<'b, 'a, 'tcx> Gatherer<'b, 'a, 'tcx> {
                     self.gather_init(destination.as_ref(), InitKind::NonPanicPathOnly);
                 }
             }
+            TerminatorKind::VectorFunc {
+                func: _,
+                ref args,
+                ref destination,
+            } => {
+                for arg in args {
+                    self.gather_operand(arg);
+                }
+                if let Some((destination, _bb)) = *destination {
+                    self.create_move_path(destination);
+                    self.gather_init(destination.as_ref(), InitKind::NonPanicPathOnly);
+                }
+            }
             TerminatorKind::InlineAsm {
                 template: _,
                 ref operands,

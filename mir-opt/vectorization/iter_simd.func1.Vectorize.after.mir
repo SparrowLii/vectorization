@@ -1,0 +1,347 @@
+// MIR for `func1` after Vectorize
+
+fn func1(_1: &[u8], _2: &[u32], _3: &mut [u32]) -> () {
+    debug src => _1;                     // in scope 0 at $DIR/iter_simd.rs:35:10: 35:13
+    debug src2 => _2;                    // in scope 0 at $DIR/iter_simd.rs:35:22: 35:26
+    debug val => _3;                     // in scope 0 at $DIR/iter_simd.rs:35:36: 35:39
+    let mut _0: ();                      // return place in scope 0 at $DIR/iter_simd.rs:35:53: 35:53
+    let mut _4: u32;                     // in scope 0 at $DIR/iter_simd.rs:36:9: 36:16
+    let mut _5: std::ops::Range<usize>;  // in scope 0 at $DIR/iter_simd.rs:37:14: 37:26
+    let mut _6: std::ops::Range<usize>;  // in scope 0 at $DIR/iter_simd.rs:37:14: 37:26
+    let mut _7: usize;                   // in scope 0 at $DIR/iter_simd.rs:37:17: 37:26
+    let mut _8: &[u8];                   // in scope 0 at $DIR/iter_simd.rs:37:17: 37:26
+    let mut _10: std::option::Option<usize>; // in scope 0 at $DIR/iter_simd.rs:37:14: 37:26
+    let mut _11: &mut std::ops::Range<usize>; // in scope 0 at $DIR/iter_simd.rs:37:14: 37:26
+    let mut _12: &mut std::ops::Range<usize>; // in scope 0 at $DIR/iter_simd.rs:37:14: 37:26
+    let mut _13: isize;                  // in scope 0 at $DIR/iter_simd.rs:37:5: 41:6
+    let mut _16: u8;                     // in scope 0 at $DIR/iter_simd.rs:38:17: 38:23
+    let _17: usize;                      // in scope 0 at $DIR/iter_simd.rs:38:21: 38:22
+    let mut _18: usize;                  // in scope 0 at $DIR/iter_simd.rs:38:17: 38:23
+    let mut _19: bool;                   // in scope 0 at $DIR/iter_simd.rs:38:17: 38:23
+    let mut _20: u32;                    // in scope 0 at $DIR/iter_simd.rs:39:16: 39:21
+    let mut _21: u32;                    // in scope 0 at $DIR/iter_simd.rs:39:16: 39:17
+    let mut _22: u32;                    // in scope 0 at $DIR/iter_simd.rs:39:20: 39:21
+    let mut _23: u32;                    // in scope 0 at $DIR/iter_simd.rs:40:18: 40:25
+    let _24: usize;                      // in scope 0 at $DIR/iter_simd.rs:40:23: 40:24
+    let mut _25: usize;                  // in scope 0 at $DIR/iter_simd.rs:40:18: 40:25
+    let mut _26: bool;                   // in scope 0 at $DIR/iter_simd.rs:40:18: 40:25
+    let mut _27: u32;                    // in scope 0 at $DIR/iter_simd.rs:40:28: 40:31
+    let _28: usize;                      // in scope 0 at $DIR/iter_simd.rs:40:13: 40:14
+    let mut _29: usize;                  // in scope 0 at $DIR/iter_simd.rs:40:9: 40:15
+    let mut _30: bool;                   // in scope 0 at $DIR/iter_simd.rs:40:9: 40:15
+    let mut _32: usize;                  // in scope 0 at no-location
+    let mut _33: [usize; 16];            // in scope 0 at no-location
+    let mut _34: [u32; 16];              // in scope 0 at no-location
+    let mut _35: [u32; 16];              // in scope 0 at no-location
+    let mut _36: [u32; 16];              // in scope 0 at no-location
+    let mut _37: [u32; 16];              // in scope 0 at no-location
+    let mut _38: [usize; 16];            // in scope 0 at no-location
+    let mut _39: [u32; 16];              // in scope 0 at no-location
+    let mut _40: [u32; 16];              // in scope 0 at no-location
+    let mut _41: [u32; 16];              // in scope 0 at no-location
+    let mut _42: usize;                  // in scope 0 at no-location
+    let mut _43: bool;                   // in scope 0 at no-location
+    let mut _44: usize;                  // in scope 0 at no-location
+    let mut _45: bool;                   // in scope 0 at no-location
+    let mut _46: usize;                  // in scope 0 at no-location
+    let mut _47: bool;                   // in scope 0 at no-location
+    let mut _48: usize;                  // in scope 0 at no-location
+    let mut _49: bool;                   // in scope 0 at no-location
+    let mut _50: usize;                  // in scope 0 at no-location
+    let mut _51: bool;                   // in scope 0 at no-location
+    let mut _52: usize;                  // in scope 0 at no-location
+    let mut _53: usize;                  // in scope 0 at no-location
+    let mut _54: usize;                  // in scope 0 at no-location
+    let mut _55: bool;                   // in scope 0 at no-location
+    scope 1 {
+        debug sum => _4;                 // in scope 1 at $DIR/iter_simd.rs:36:9: 36:16
+        let mut _9: std::ops::Range<usize>; // in scope 1 at $DIR/iter_simd.rs:37:14: 37:26
+        scope 2 {
+            debug iter => _9;            // in scope 2 at $DIR/iter_simd.rs:37:14: 37:26
+            let _14: usize;              // in scope 2 at $DIR/iter_simd.rs:37:9: 37:10
+            scope 3 {
+                debug x => _14;          // in scope 3 at $DIR/iter_simd.rs:37:9: 37:10
+                let _15: u32;            // in scope 3 at $DIR/iter_simd.rs:38:13: 38:14
+                scope 4 {
+                    debug v => _15;      // in scope 4 at $DIR/iter_simd.rs:38:13: 38:14
+                }
+            }
+            scope 6 (inlined iter::range::<impl Iterator for std::ops::Range<usize>>::next) { // at $DIR/iter_simd.rs:37:14: 37:26
+                debug self => _11;       // in scope 6 at $DIR/iter_simd.rs:37:14: 37:26
+                let mut _31: &mut std::ops::Range<usize>; // in scope 6 at $DIR/iter_simd.rs:37:14: 37:26
+            }
+        }
+        scope 5 (inlined <std::ops::Range<usize> as IntoIterator>::into_iter) { // at $DIR/iter_simd.rs:37:14: 37:26
+            debug self => _6;            // in scope 5 at $DIR/iter_simd.rs:37:14: 37:26
+        }
+    }
+
+    bb0: {
+        StorageLive(_4);                 // scope 0 at $DIR/iter_simd.rs:36:9: 36:16
+        _4 = const 0_u32;                // scope 0 at $DIR/iter_simd.rs:36:19: 36:20
+        StorageLive(_5);                 // scope 1 at $DIR/iter_simd.rs:37:14: 37:26
+        StorageLive(_6);                 // scope 1 at $DIR/iter_simd.rs:37:14: 37:26
+        StorageLive(_7);                 // scope 1 at $DIR/iter_simd.rs:37:17: 37:26
+        StorageLive(_8);                 // scope 1 at $DIR/iter_simd.rs:37:17: 37:26
+        _8 = _1;                         // scope 1 at $DIR/iter_simd.rs:37:17: 37:26
+        _7 = Len((*_8));                 // scope 1 at $DIR/iter_simd.rs:37:17: 37:26
+        StorageDead(_8);                 // scope 1 at $DIR/iter_simd.rs:37:25: 37:26
+        (_6.0: usize) = const 0_usize;   // scope 1 at $DIR/iter_simd.rs:37:14: 37:26
+        (_6.1: usize) = move _7;         // scope 1 at $DIR/iter_simd.rs:37:14: 37:26
+        StorageDead(_7);                 // scope 1 at $DIR/iter_simd.rs:37:25: 37:26
+        _5 = move _6;                    // scope 5 at $DIR/iter_simd.rs:37:14: 37:26
+        StorageDead(_6);                 // scope 1 at $DIR/iter_simd.rs:37:25: 37:26
+        StorageLive(_9);                 // scope 1 at $DIR/iter_simd.rs:37:14: 37:26
+        _9 = move _5;                    // scope 1 at $DIR/iter_simd.rs:37:14: 37:26
+        goto -> bb2;                     // scope 2 at $DIR/iter_simd.rs:37:5: 41:6
+    }
+
+    bb1: {
+        StorageDead(_12);                // scope 2 at $DIR/iter_simd.rs:41:5: 41:6
+        StorageDead(_10);                // scope 2 at $DIR/iter_simd.rs:41:5: 41:6
+        StorageDead(_9);                 // scope 1 at $DIR/iter_simd.rs:41:5: 41:6
+        StorageDead(_5);                 // scope 1 at $DIR/iter_simd.rs:41:5: 41:6
+        StorageDead(_4);                 // scope 0 at $DIR/iter_simd.rs:42:1: 42:2
+        return;                          // scope 0 at $DIR/iter_simd.rs:42:2: 42:2
+    }
+
+    bb2: {
+        _32 = const 0_usize;             // scope 0 at no-location
+        goto -> bb3;                     // scope 0 at no-location
+    }
+
+    bb3: {
+        _42 = _32;                       // scope 0 at no-location
+        _43 = Ge(move _42, const 16_usize); // scope 0 at no-location
+        switchInt(move _43) -> [false: bb4, otherwise: bb7]; // scope 0 at no-location
+    }
+
+    bb4: {
+        StorageLive(_10);                // scope 2 at $DIR/iter_simd.rs:37:14: 37:26
+        StorageLive(_11);                // scope 2 at $DIR/iter_simd.rs:37:14: 37:26
+        StorageLive(_12);                // scope 2 at $DIR/iter_simd.rs:37:14: 37:26
+        _12 = &mut _9;                   // scope 0 at no-location
+        _11 = &mut (*_12);               // scope 0 at no-location
+        StorageLive(_31);                // scope 6 at $DIR/iter_simd.rs:37:14: 37:26
+        _31 = &mut (*_11);               // scope 0 at no-location
+        _10 = <std::ops::Range<usize> as iter::range::RangeIteratorImpl>::spec_next(move _31) -> bb5; // scope 0 at no-location
+                                         // mir::Constant
+                                         // + span: $DIR/iter_simd.rs:37:14: 37:26
+                                         // + literal: Const { ty: for<'r> fn(&'r mut std::ops::Range<usize>) -> std::option::Option<<std::ops::Range<usize> as std::iter::range::RangeIteratorImpl>::Item> {<std::ops::Range<usize> as std::iter::range::RangeIteratorImpl>::spec_next}, val: Value(Scalar(<ZST>)) }
+    }
+
+    bb5: {
+        StorageDead(_31);                // scope 6 at $DIR/iter_simd.rs:37:14: 37:26
+        StorageDead(_11);                // scope 2 at $DIR/iter_simd.rs:37:25: 37:26
+        _13 = discriminant(_10);         // scope 0 at no-location
+        switchInt(move _13) -> [0_isize: bb25, otherwise: bb6]; // scope 0 at no-location
+    }
+
+    bb6: {
+        _33[_32] = ((_10 as Some).0: usize); // scope 0 at no-location
+        StorageDead(_10);                // scope 2 at $DIR/iter_simd.rs:41:5: 41:6
+        _32 = Add(_32, const 1_usize);   // scope 0 at no-location
+        goto -> bb3;                     // scope 0 at no-location
+    }
+
+    bb7: {
+        StorageLive(_14);                // scope 0 at no-location
+        StorageLive(_15);                // scope 0 at no-location
+        StorageLive(_16);                // scope 0 at no-location
+        StorageLive(_17);                // scope 0 at no-location
+        StorageLive(_20);                // scope 0 at no-location
+        StorageLive(_21);                // scope 0 at no-location
+        StorageLive(_22);                // scope 0 at no-location
+        _32 = const 0_usize;             // scope 0 at no-location
+        goto -> bb8;                     // scope 0 at no-location
+    }
+
+    bb8: {
+        _44 = _32;                       // scope 0 at no-location
+        _45 = Ge(move _44, const 16_usize); // scope 0 at no-location
+        switchInt(move _45) -> [false: bb9, otherwise: bb11]; // scope 0 at no-location
+    }
+
+    bb9: {
+        _17 = _33[_32];                  // scope 0 at no-location
+        _18 = Len((*_1));                // scope 0 at no-location
+        _19 = Lt(_17, _18);              // scope 0 at no-location
+        assert(move _19, "index out of bounds: the length is {} but the index is {}", move _18, _17) -> bb10; // scope 0 at no-location
+    }
+
+    bb10: {
+        _16 = (*_1)[_17];                // scope 0 at no-location
+        _15 = move _16 as u32 (Misc);    // scope 0 at no-location
+        _35[_32] = _15;                  // scope 0 at no-location
+        _36[_32] = _15;                  // scope 0 at no-location
+        _32 = Add(_32, const 1_usize);   // scope 0 at no-location
+        goto -> bb8;                     // scope 0 at no-location
+    }
+
+    bb11: {
+        StorageDead(_16);                // scope 0 at no-location
+        StorageDead(_17);                // scope 0 at no-location
+        _34 = "simd_mul"(move _35, move _36) -> bb12; // scope 0 at no-location
+    }
+
+    bb12: {
+        StorageDead(_22);                // scope 0 at no-location
+        StorageDead(_21);                // scope 0 at no-location
+        StorageLive(_23);                // scope 0 at no-location
+        StorageLive(_24);                // scope 0 at no-location
+        _32 = const 0_usize;             // scope 0 at no-location
+        goto -> bb13;                    // scope 0 at no-location
+    }
+
+    bb13: {
+        _46 = _32;                       // scope 0 at no-location
+        _47 = Ge(move _46, const 16_usize); // scope 0 at no-location
+        switchInt(move _47) -> [false: bb14, otherwise: bb16]; // scope 0 at no-location
+    }
+
+    bb14: {
+        _4 = Add(_4, move _34[_32]);     // scope 0 at no-location
+        _41[_32] = _4;                   // scope 0 at no-location
+        _24 = _33[_32];                  // scope 0 at no-location
+        _25 = Len((*_2));                // scope 0 at no-location
+        _26 = Lt(_24, _25);              // scope 0 at no-location
+        assert(move _26, "index out of bounds: the length is {} but the index is {}", move _25, _24) -> bb15; // scope 0 at no-location
+    }
+
+    bb15: {
+        _39[_32] = (*_2)[_24];           // scope 0 at no-location
+        _32 = Add(_32, const 1_usize);   // scope 0 at no-location
+        goto -> bb13;                    // scope 0 at no-location
+    }
+
+    bb16: {
+        StorageDead(_20);                // scope 0 at no-location
+        StorageLive(_27);                // scope 0 at no-location
+        _40 = _41;                       // scope 0 at no-location
+        StorageLive(_28);                // scope 0 at no-location
+        _38 = _33;                       // scope 0 at no-location
+        _32 = const 0_usize;             // scope 0 at no-location
+        goto -> bb17;                    // scope 0 at no-location
+    }
+
+    bb17: {
+        _48 = _32;                       // scope 0 at no-location
+        _49 = Ge(move _48, const 16_usize); // scope 0 at no-location
+        switchInt(move _49) -> [false: bb18, otherwise: bb20]; // scope 0 at no-location
+    }
+
+    bb18: {
+        _29 = Len((*_3));                // scope 0 at no-location
+        _30 = Lt(_38[_32], _29);         // scope 0 at no-location
+        _28 = _38[_32];                  // scope 0 at no-location
+        assert(move _30, "index out of bounds: the length is {} but the index is {}", move _29, _28) -> bb19; // scope 0 at no-location
+    }
+
+    bb19: {
+        _32 = Add(_32, const 1_usize);   // scope 0 at no-location
+        goto -> bb17;                    // scope 0 at no-location
+    }
+
+    bb20: {
+        _37 = "simd_add"(move _39, move _40) -> bb21; // scope 0 at no-location
+    }
+
+    bb21: {
+        _32 = const 0_usize;             // scope 0 at no-location
+        goto -> bb22;                    // scope 0 at no-location
+    }
+
+    bb22: {
+        _50 = _32;                       // scope 0 at no-location
+        _51 = Ge(move _50, const 16_usize); // scope 0 at no-location
+        switchInt(move _51) -> [false: bb23, otherwise: bb24]; // scope 0 at no-location
+    }
+
+    bb23: {
+        _28 = _38[_32];                  // scope 0 at no-location
+        (*_3)[_28] = _37[_32];           // scope 0 at no-location
+        _32 = Add(_32, const 1_usize);   // scope 0 at no-location
+        goto -> bb22;                    // scope 0 at no-location
+    }
+
+    bb24: {
+        StorageDead(_27);                // scope 0 at no-location
+        StorageDead(_23);                // scope 0 at no-location
+        StorageDead(_28);                // scope 0 at no-location
+        StorageDead(_24);                // scope 0 at no-location
+        StorageDead(_15);                // scope 0 at no-location
+        StorageDead(_14);                // scope 0 at no-location
+        StorageDead(_12);                // scope 0 at no-location
+        goto -> bb2;                     // scope 0 at no-location
+    }
+
+    bb25: {
+        _52 = const 0_usize;             // scope 0 at no-location
+        goto -> bb26;                    // scope 0 at no-location
+    }
+
+    bb26: {
+        _53 = _52;                       // scope 0 at no-location
+        _54 = _32;                       // scope 0 at no-location
+        _55 = Ge(move _53, move _54);    // scope 0 at no-location
+        switchInt(move _55) -> [false: bb27, otherwise: bb1]; // scope 0 at no-location
+    }
+
+    bb27: {
+        StorageLive(_14);                // scope 0 at no-location
+        StorageLive(_15);                // scope 0 at no-location
+        StorageLive(_16);                // scope 0 at no-location
+        StorageLive(_17);                // scope 0 at no-location
+        _17 = _33[_52];                  // scope 0 at no-location
+        _18 = Len((*_1));                // scope 0 at no-location
+        _19 = Lt(_17, _18);              // scope 0 at no-location
+        assert(move _19, "index out of bounds: the length is {} but the index is {}", move _18, _17) -> bb28; // scope 0 at no-location
+    }
+
+    bb28: {
+        _16 = (*_1)[_17];                // scope 0 at no-location
+        _15 = move _16 as u32 (Misc);    // scope 0 at no-location
+        StorageDead(_16);                // scope 0 at no-location
+        StorageDead(_17);                // scope 0 at no-location
+        StorageLive(_20);                // scope 0 at no-location
+        StorageLive(_21);                // scope 0 at no-location
+        _21 = _15;                       // scope 0 at no-location
+        StorageLive(_22);                // scope 0 at no-location
+        _22 = _15;                       // scope 0 at no-location
+        _20 = Mul(move _21, move _22);   // scope 0 at no-location
+        StorageDead(_22);                // scope 0 at no-location
+        StorageDead(_21);                // scope 0 at no-location
+        _4 = Add(_4, move _20);          // scope 0 at no-location
+        StorageDead(_20);                // scope 0 at no-location
+        StorageLive(_23);                // scope 0 at no-location
+        StorageLive(_24);                // scope 0 at no-location
+        _24 = _33[_52];                  // scope 0 at no-location
+        _25 = Len((*_2));                // scope 0 at no-location
+        _26 = Lt(_24, _25);              // scope 0 at no-location
+        assert(move _26, "index out of bounds: the length is {} but the index is {}", move _25, _24) -> bb29; // scope 0 at no-location
+    }
+
+    bb29: {
+        _23 = (*_2)[_24];                // scope 0 at no-location
+        StorageLive(_27);                // scope 0 at no-location
+        _27 = _4;                        // scope 0 at no-location
+        StorageLive(_28);                // scope 0 at no-location
+        _28 = _33[_52];                  // scope 0 at no-location
+        _29 = Len((*_3));                // scope 0 at no-location
+        _30 = Lt(_28, _29);              // scope 0 at no-location
+        assert(move _30, "index out of bounds: the length is {} but the index is {}", move _29, _28) -> bb30; // scope 0 at no-location
+    }
+
+    bb30: {
+        (*_3)[_28] = Add(move _23, move _27); // scope 0 at no-location
+        StorageDead(_27);                // scope 0 at no-location
+        StorageDead(_23);                // scope 0 at no-location
+        StorageDead(_28);                // scope 0 at no-location
+        StorageDead(_24);                // scope 0 at no-location
+        StorageDead(_15);                // scope 0 at no-location
+        StorageDead(_14);                // scope 0 at no-location
+        StorageDead(_12);                // scope 0 at no-location
+        _52 = Add(_52, const 1_usize);   // scope 0 at no-location
+        goto -> bb26;                    // scope 0 at no-location
+    }
+}

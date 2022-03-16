@@ -80,25 +80,19 @@ fn get_simple_intrinsic<'ll>(
 impl<'ll, 'tcx> IntrinsicCallMethods<'tcx> for Builder<'_, 'll, 'tcx> {
     fn codegen_intrinsic_call(
         &mut self,
-        instance: ty::Instance<'tcx>,
+        name : Symbol,
+        callee_ty: Ty<'tcx>,
         fn_abi: &FnAbi<'tcx, Ty<'tcx>>,
-        args: &[OperandRef<'tcx, &'ll Value>],
-        llresult: &'ll Value,
+        args: &[OperandRef<'tcx, Self::Value>],
+        llresult: Self::Value,
         span: Span,
     ) {
         let tcx = self.tcx;
-        let callee_ty = instance.ty(tcx, ty::ParamEnv::reveal_all());
-
-        let (def_id, substs) = match *callee_ty.kind() {
-            ty::FnDef(def_id, substs) => (def_id, substs),
-            _ => bug!("expected fn item type, found {}", callee_ty),
-        };
 
         let sig = callee_ty.fn_sig(tcx);
         let sig = tcx.normalize_erasing_late_bound_regions(ty::ParamEnv::reveal_all(), sig);
         let arg_tys = sig.inputs();
         let ret_ty = sig.output();
-        let name = tcx.item_name(def_id);
 
         let llret_ty = self.layout_of(ret_ty).llvm_type(self);
         let result = PlaceRef::new_sized(llresult, fn_abi.ret.layout);
@@ -161,6 +155,10 @@ impl<'ll, 'tcx> IntrinsicCallMethods<'tcx> for Builder<'_, 'll, 'tcx> {
             }
 
             sym::volatile_load | sym::unaligned_volatile_load => {
+                let substs = match *callee_ty.kind() {
+                    ty::FnDef(_, substs) => substs,
+                    _ => bug!("expected fn item type, found {}", callee_ty),
+                };
                 let tp_ty = substs.type_at(0);
                 let ptr = args[0].immediate();
                 let load = if let PassMode::Cast(ty) = fn_abi.ret.mode {
@@ -300,6 +298,10 @@ impl<'ll, 'tcx> IntrinsicCallMethods<'tcx> for Builder<'_, 'll, 'tcx> {
 
             sym::raw_eq => {
                 use abi::Abi::*;
+                let substs = match *callee_ty.kind() {
+                    ty::FnDef(_, substs) => substs,
+                    _ => bug!("expected fn item type, found {}", callee_ty),
+                };
                 let tp_ty = substs.type_at(0);
                 let layout = self.layout_of(tp_ty).layout;
                 let use_integer_compare = match layout.abi {
@@ -363,7 +365,14 @@ impl<'ll, 'tcx> IntrinsicCallMethods<'tcx> for Builder<'_, 'll, 'tcx> {
             }
 
             _ if name.as_str().starts_with("simd_") => {
-                match generic_simd_intrinsic(self, name, callee_ty, args, ret_ty, llret_ty, span) {
+                let vectorization = match *callee_ty.kind() {
+                    ty::FnDef(..) => false,
+                    ty::FnPtr(..) => true,
+                    _ => bug!("expected fn item type, found {}", callee_ty),
+                };
+                match generic_simd_intrinsic(
+                    self, name, callee_ty, args, ret_ty, llret_ty, span, vectorization,
+                ) {
                     Ok(llval) => llval,
                     Err(()) => return,
                 }
@@ -802,7 +811,7 @@ fn get_rust_try_fn<'ll, 'tcx>(
     rust_try
 }
 
-fn generic_simd_intrinsic<'ll, 'tcx>(
+pub fn generic_simd_intrinsic<'ll, 'tcx>(
     bx: &mut Builder<'_, 'll, 'tcx>,
     name: Symbol,
     callee_ty: Ty<'tcx>,
@@ -810,6 +819,7 @@ fn generic_simd_intrinsic<'ll, 'tcx>(
     ret_ty: Ty<'tcx>,
     llret_ty: &'ll Type,
     span: Span,
+    vectorization: bool,
 ) -> Result<&'ll Value, ()> {
     // macros for error handling:
     macro_rules! emit_error {
@@ -843,7 +853,26 @@ fn generic_simd_intrinsic<'ll, 'tcx>(
 
     macro_rules! require_simd {
         ($ty: expr, $position: expr) => {
-            require!($ty.is_simd(), "expected SIMD {} type, found non-SIMD `{}`", $position, $ty)
+            require!(
+                (vectorization || $ty.is_simd()),
+                "expected SIMD {} type, found non-SIMD `{}`",
+                $position,
+                $ty
+            )
+        };
+    }
+
+    macro_rules! simd_size_and_type {
+        ($ty: expr) => {
+            if vectorization {
+                if let ty::Array(elem_ty, len) = $ty.kind() {
+                    (len.eval_usize(bx.tcx(), ty::ParamEnv::empty()) as u64, *elem_ty)
+                } else {
+                    return_error!("invalid type for vectorization: {}", $ty)
+                }
+            } else {
+                $ty.simd_size_and_type(bx.tcx())
+            }
         };
     }
 
@@ -854,7 +883,7 @@ fn generic_simd_intrinsic<'ll, 'tcx>(
 
     if name == sym::simd_select_bitmask {
         require_simd!(arg_tys[1], "argument");
-        let (len, _) = arg_tys[1].simd_size_and_type(bx.tcx());
+        let (len, _) = simd_size_and_type!(arg_tys[1]);
 
         let expected_int_bits = (len.max(8) - 1).next_power_of_two();
         let expected_bytes = len / 8 + ((len % 8 > 0) as u64);
@@ -904,11 +933,11 @@ fn generic_simd_intrinsic<'ll, 'tcx>(
         _ => None,
     };
 
-    let (in_len, in_elem) = arg_tys[0].simd_size_and_type(bx.tcx());
+    let (in_len, in_elem) = simd_size_and_type!(arg_tys[0]);
     if let Some(cmp_op) = comparison {
         require_simd!(ret_ty, "return");
 
-        let (out_len, out_ty) = ret_ty.simd_size_and_type(bx.tcx());
+        let (out_len, out_ty) = simd_size_and_type!(ret_ty);
         require!(
             in_len == out_len,
             "expected return type with length {} (same as input type `{}`), \
@@ -959,7 +988,7 @@ fn generic_simd_intrinsic<'ll, 'tcx>(
         };
 
         require_simd!(ret_ty, "return");
-        let (out_len, out_ty) = ret_ty.simd_size_and_type(bx.tcx());
+        let (out_len, out_ty) = simd_size_and_type!(ret_ty);
         require!(
             out_len == n,
             "expected return type of length {}, found `{}` with length {}",
@@ -1043,7 +1072,7 @@ fn generic_simd_intrinsic<'ll, 'tcx>(
         let m_elem_ty = in_elem;
         let m_len = in_len;
         require_simd!(arg_tys[1], "argument");
-        let (v_len, _) = arg_tys[1].simd_size_and_type(bx.tcx());
+        let (v_len, _) = simd_size_and_type!(arg_tys[1]);
         require!(
             m_len == v_len,
             "mismatched lengths: mask length `{}` != other vector length `{}`",
@@ -1292,8 +1321,8 @@ fn generic_simd_intrinsic<'ll, 'tcx>(
         require_simd!(ret_ty, "return");
 
         // Of the same length:
-        let (out_len, _) = arg_tys[1].simd_size_and_type(bx.tcx());
-        let (out_len2, _) = arg_tys[2].simd_size_and_type(bx.tcx());
+        let (out_len, _) = simd_size_and_type!(arg_tys[1]);
+        let (out_len2, _) = simd_size_and_type!(arg_tys[2]);
         require!(
             in_len == out_len,
             "expected {} argument with length {} (same as input type `{}`), \
@@ -1336,8 +1365,8 @@ fn generic_simd_intrinsic<'ll, 'tcx>(
 
         // The second argument must be a simd vector with an element type that's a pointer
         // to the element type of the first argument
-        let (_, element_ty0) = arg_tys[0].simd_size_and_type(bx.tcx());
-        let (_, element_ty1) = arg_tys[1].simd_size_and_type(bx.tcx());
+        let (_, element_ty0) = simd_size_and_type!(arg_tys[0]);
+        let (_, element_ty1) = simd_size_and_type!(arg_tys[1]);
         let (pointer_count, underlying_ty) = match element_ty1.kind() {
             ty::RawPtr(p) if p.ty == in_elem => (ptr_count(element_ty1), non_ptr(element_ty1)),
             _ => {
@@ -1361,7 +1390,7 @@ fn generic_simd_intrinsic<'ll, 'tcx>(
         assert_eq!(underlying_ty, non_ptr(element_ty0));
 
         // The element type of the third argument must be a signed integer type of any width:
-        let (_, element_ty2) = arg_tys[2].simd_size_and_type(bx.tcx());
+        let (_, element_ty2) = simd_size_and_type!(arg_tys[2]);
         match element_ty2.kind() {
             ty::Int(_) => (),
             _ => {
@@ -1419,8 +1448,8 @@ fn generic_simd_intrinsic<'ll, 'tcx>(
         require_simd!(arg_tys[2], "third");
 
         // Of the same length:
-        let (element_len1, _) = arg_tys[1].simd_size_and_type(bx.tcx());
-        let (element_len2, _) = arg_tys[2].simd_size_and_type(bx.tcx());
+        let (element_len1, _) = simd_size_and_type!(arg_tys[1]);
+        let (element_len2, _) = simd_size_and_type!(arg_tys[2]);
         require!(
             in_len == element_len1,
             "expected {} argument with length {} (same as input type `{}`), \
@@ -1460,9 +1489,9 @@ fn generic_simd_intrinsic<'ll, 'tcx>(
 
         // The second argument must be a simd vector with an element type that's a pointer
         // to the element type of the first argument
-        let (_, element_ty0) = arg_tys[0].simd_size_and_type(bx.tcx());
-        let (_, element_ty1) = arg_tys[1].simd_size_and_type(bx.tcx());
-        let (_, element_ty2) = arg_tys[2].simd_size_and_type(bx.tcx());
+        let (_, element_ty0) = simd_size_and_type!(arg_tys[0]);
+        let (_, element_ty1) = simd_size_and_type!(arg_tys[1]);
+        let (_, element_ty2) = simd_size_and_type!(arg_tys[2]);
         let (pointer_count, underlying_ty) = match element_ty1.kind() {
             ty::RawPtr(p) if p.ty == in_elem && p.mutbl == hir::Mutability::Mut => {
                 (ptr_count(element_ty1), non_ptr(element_ty1))
@@ -1691,7 +1720,7 @@ unsupported {} from `{}` with element `{}` of size `{}` to `{}`"#,
 
     if name == sym::simd_cast {
         require_simd!(ret_ty, "return");
-        let (out_len, out_elem) = ret_ty.simd_size_and_type(bx.tcx());
+        let (out_len, out_elem) = simd_size_and_type!(ret_ty);
         require!(
             in_len == out_len,
             "expected return type with length {} (same as input type `{}`), \
@@ -1836,7 +1865,7 @@ unsupported {} from `{}` with element `{}` of size `{}` to `{}`"#,
                 return_error!(
                     "expected element type `{}` of vector type `{}` \
                      to be a signed or unsigned integer type",
-                    arg_tys[0].simd_size_and_type(bx.tcx()).1,
+                    simd_size_and_type!(arg_tys[0]).1,
                     arg_tys[0]
                 );
             }
