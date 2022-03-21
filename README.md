@@ -274,15 +274,15 @@ The remaining about 10% of the code are necessary changes to other parts of rust
 
 `Vectorize`pass will parse the loop structure in mir blocks, divide it into three parts `before loop`loop part`after loop`, re-factor the `loop part`. The three parts are then rejoined into the final mir.
 
-![](img\1.PNG)
+<img src="img\1.PNG" style="zoom:80%;" />
 
 There are three key steps in the refactoring process. They generate `Vec<OriginStmt>`,`Vec<VectStmt>` and the final mir respectively. `OriginStmt` and `VectStmt` are both intermediate representation `Enum` in the refactoring process.
 
-![](img\2.PNG)
+<img src="img\2.PNG" style="zoom:80%;" />
 
 step 1. Translate the original mir statements and terminators into the intermediate presentation layer `Vec<OriginStmt>` through the `resolve_stmt() `method, Then divide it into condition part and loop body part:
 
-![](img\step1.PNG)
+<img src="img\step1.PNG" style="zoom:80%;" />
 
 The semantics represented by each type in `OriginStmt` are as follows:
 
@@ -312,7 +312,7 @@ The mapping of the original mir statement to the `OriginStmt` enumeration type i
 
 step 2. By parsing the OriginStmt array, translate the statements that can be vectorized into the corresponding VectStmt enumeration type; otherwise, keep it unchanged and use the InnerLoopStmt enum type to contain it:
 
-![](img\step2.PNG)
+<img src="img\step2.PNG" style="zoom:80%;" />
 
 The semantics represented by each type in `VectStmt` are as follows:
 
@@ -331,7 +331,7 @@ Assuming that the element length of the SIMD function is vector_len, the process
 
 step 3. Finally use generate_vector_section() method to generate mir statement from VectStmt array:
 
-![](img\step3.PNG)
+<img src="img\step3.PNG" style="zoom:80%;" />
 
 ### 2.2.2 other compiler changes
 
