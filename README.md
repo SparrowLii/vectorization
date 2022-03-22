@@ -7,8 +7,11 @@
 LLVM provides some automatic vectorization optimization mechanisms, which can automatically perform SIMD optimization work in some scenarios. But in many other scenarios, we still need to manually use SIMD instructions to rewrite the program to get the SIMD acceleration effect.
 
 The Rust compiler does a good job of generating proper LLVM IR to get SIMD instruction acceleration. And Rust developers currently have multiple ways to use these SIMD instructions:
+
 · stdarch
+
 · protable-SIMD
+
 · use 'extern “platform-intrinsics” ' Abi directly
 
 (I also made some contributions in stdarch last year)
